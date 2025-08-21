@@ -1,6 +1,115 @@
 <template>
   <div id="app">
+    <div class="container">
+      <div class="header">
+        <h1>Management System</h1>
+      </div>
+      <div v-if="error" class="error">
+        {{ error }}
+        <button @click="error = null" style="float: right; background: none; color: inherit; padding: 5px;">×</button>
+      </div>
 
+      <div v-if="success" class="success">
+        {{ success }}
+        <button @click="success = null" style="float: right; background: none; color: inherit; padding: 5px;">×</button>
+      </div>
+
+      <div class="controls">
+        <div class="pagination">
+          <button @click="previousPage" :disabled="currentPage === 0">
+            ← Previous
+          </button>
+          <span class="pagination-info">
+            Page {{ currentPage + 1 }} of {{ totalPages }}
+            ({{ totalElements }} total customers)
+          </span>
+          <button @click="nextPage" :disabled="currentPage >= totalPages - 1">
+            Next →
+          </button>
+        </div>
+        <button class="add-customer-btn" @click="showAddModal">
+          + Add Customer
+        </button>
+      </div>
+
+      <div v-if="loading" class="loading">
+        Loading customers...
+      </div>
+
+      <div v-else class="customer-table-container">
+        <table class="customer-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Address</th>
+              <th>Email</th>
+              <th>Telephone</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(customer, index) in customers" :key="customer.id">
+              <td>{{ (currentPage * pageSize) + index + 1 }}</td>
+              <td>
+                <div class="customer-name">{{ customer.name }}</div>
+              </td>
+              <td>{{ customer.address }}</td>
+              <td>{{ customer.email }}</td>
+              <td>{{ customer.telephone }}</td>
+              <td>
+                <div class="customer-actions">
+                  <button class="edit-btn" @click="editCustomer(customer)" title="Edit customer">
+                    Edit
+                  </button>
+                  <button class="delete-btn" @click="deleteCustomer(customer.id)" title="Delete customer">
+                    Delete
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr v-if="customers.length === 0">
+              <td colspan="6" style="text-align: center; padding: 2rem; color: #666;">
+                No customers found.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Add/Edit Modal -->
+      <div class="modal" :class="{ active: showModal }">
+        <div class="modal-content">
+          <h2>{{ isEditing ? 'Edit Customer' : 'Add New Customer' }}</h2>
+          <form @submit.prevent="saveCustomer">
+            <div class="form-group">
+              <label for="name">Name *</label>
+              <input type="text" id="name" v-model="customerForm.name" required>
+            </div>
+            <div class="form-group">
+              <label for="address">Address *</label>
+              <input type="text" id="address" v-model="customerForm.address" required>
+            </div>
+            <div class="form-group">
+              <label for="email">Email *</label>
+              <input type="email" id="email" v-model="customerForm.email" required>
+            </div>
+            <div class="form-group">
+              <label for="telephone">Telephone *</label>
+              <input type="tel" id="telephone" v-model="customerForm.telephone" required>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="cancel-btn" @click="closeModal">
+                Cancel
+              </button>
+              <button type="submit" :disabled="saving">
+                {{ saving ? 'Saving...' : (isEditing ? 'Update' : 'Add') }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -49,15 +158,7 @@ export default {
         this.totalPages = response.data.totalPages;
         this.totalElements = response.data.totalElements;
       } catch (error) {
-        if (error.response?.status === 404) {
-          this.error = 'The requested resource was not found. Please check the URL.';
-        } else if (error.response?.status === 500) {
-          this.error = 'Server error. Please try again later.';
-        } else if (error.response?.status === 403) {
-          this.error = 'Access forbidden. Please check your permissions.';
-        } else {
-          this.error = 'Error loading customers: ' + (error.response?.data?.message || error.message);
-        }
+        this.error = 'Error loading customers: ' + error.message;
         console.error('Error:', error);
       } finally {
         this.loading = false;
@@ -171,5 +272,7 @@ export default {
 </script>
 
 <style>
+/* Copy the content from your old style.css here */
+/* Or keep it as a separate file and import it */
 @import './style.css';
 </style>

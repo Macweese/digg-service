@@ -261,7 +261,7 @@ onMounted(() => {
           <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
           <p class="mt-4 text-slate-500 dark:text-slate-400">Loading customers...</p>
         </div>
-        <table v-else-if="paginatedCustomers.length > 0" class="w-full text-sm text-left text-slate-500 dark:text-slate-400">
+        <table v-else-if="paginatedCustomers.length > 0" class="w-full text-sm text-left text-slate-500 dark:text-slate-400 fixed-table">
           <thead class="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-300" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
           <tr>
             <th scope="col" class="px-6 py-3" >Name</th>
@@ -389,6 +389,45 @@ onMounted(() => {
 /* Toast animation */
 .fade-in-out {
     animation: fadeInOut 3s ease-in-out forwards;
+}
+
+/* Fixed table column widths */
+.fixed-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.fixed-table th:nth-child(1),
+.fixed-table td:nth-child(1) {
+  width: 20%; /* Name column */
+}
+
+.fixed-table th:nth-child(2),
+.fixed-table td:nth-child(2) {
+  width: 30%; /* Contact column */
+}
+
+.fixed-table th:nth-child(3),
+.fixed-table td:nth-child(3) {
+  width: 35%; /* Address column */
+}
+
+.fixed-table th:nth-child(4),
+.fixed-table td:nth-child(4) {
+  width: 15%; /* Actions column */
+}
+
+/* Ensure text doesn't overflow */
+.fixed-table td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Allow wrapping for specific columns if needed */
+.fixed-table td:nth-child(3) { /* Address column */
+  white-space: normal;
+  word-wrap: break-word;
 }
 
 @keyframes fadeInOut {

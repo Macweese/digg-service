@@ -1,17 +1,16 @@
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted, watch } from 'vue';
 
 // --- STATE MANAGEMENT (Reactivity) ---
-const customers = ref([]);
+const customers = ref([]); // Holds the complete list of customers from the API
 const isLoading = ref(true);
 const isModalOpen = ref(false);
-const editingCustomer = ref(null); // Holds the customer object being edited
+const firstInput = ref(null);
+const editingCustomer = ref(null);
 const searchTerm = ref('');
-const currentPage = ref(0); // API is 0-indexed
-const totalPages = ref(0);
-const totalElements = ref(0);
+const currentPage = ref(0); // 0-indexed for slice calculation
 const isDeleteConfirmOpen = ref(false);
-const customerToDelete = ref(null); // Holds the ID of the customer to delete
+const customerToDelete = ref(null);
 const toastMessage = ref('');
 const errorMessage = ref('');
 
@@ -24,24 +23,28 @@ const customerForm = reactive({
   telephone: ''
 });
 
+const openModal = async () => {
+  isModalOpen.value = true;
+  await nextTick();
+  firstInput.value?.focus();
+};
+
 // --- CONSTANTS ---
 const ITEMS_PER_PAGE = 10;
 const BASE_API_URL = 'http://localhost:8080/digg/user';
 
 // --- API METHODS ---
-// Fetch customers from the backend
+// Fetch ALL customers from the backend
 async function loadCustomers() {
   isLoading.value = true;
   errorMessage.value = '';
   try {
-    const response = await fetch(`${BASE_API_URL}/paginated?page=${currentPage.value}&size=${ITEMS_PER_PAGE}`);
+    const response = await fetch(BASE_API_URL);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
-    customers.value = data.customers;
-    totalPages.value = data.totalPages;
-    totalElements.value = data.totalElements;
+    customers.value = data;
   } catch (error) {
     console.error("Failed to load customers:", error);
     errorMessage.value = "Could not connect to the server or failed to load customers.";
@@ -51,7 +54,7 @@ async function loadCustomers() {
   }
 }
 
-// Saves a new or existing customer
+// Save new or existing customer
 async function handleSaveCustomer() {
   const isEditing = !!editingCustomer.value;
   const url = isEditing ? `${BASE_API_URL}/${customerForm.id}` : BASE_API_URL;
@@ -66,7 +69,7 @@ async function handleSaveCustomer() {
     if (!response.ok) {
       throw new Error('Failed to save the customer.');
     }
-    await loadCustomers(); // Refresh the list
+    await loadCustomers();
     showToast(`Customer ${isEditing ? 'updated' : 'added'} successfully!`);
     handleCloseModal();
   } catch (error) {
@@ -84,12 +87,13 @@ async function confirmDelete() {
     if (!response.ok) {
       throw new Error('Failed to delete the customer.');
     }
-    // Optimistically remove customer from UI or reload
-    customers.value = customers.value.filter(c => c.id !== customerToDelete.value);
-    if (paginatedCustomers.value.length === 0 && currentPage.value > 0) {
-        currentPage.value--;
+
+    // Adjust current page if the last item on a page was deleted
+    if (paginatedCustomers.value.length === 1 && currentPage.value > 0) {
+      currentPage.value--;
     }
-    await loadCustomers(); // Reload to get correct totalElements and pages
+
+    await loadCustomers(); // Reload all data from the server
     showToast('Customer deleted successfully!');
   } catch (error) {
     console.error("Failed to delete customer:", error);
@@ -101,8 +105,9 @@ async function confirmDelete() {
 }
 
 
-// --- COMPUTED PROPERTIES ---
-// Filter customers based on the search term across all fields
+// --- COMPUTED PROPERTIES (Client-Side Logic) ---
+
+// Filter customers based on the search term
 const filteredCustomers = computed(() => {
   if (!searchTerm.value) {
     return customers.value;
@@ -115,10 +120,28 @@ const filteredCustomers = computed(() => {
   );
 });
 
-// Note: With backend pagination, frontend filtering is disabled.
-// A real implementation would pass the search term to the backend API.
-// For this demo, we'll keep the mock filtering on the current page's data.
-const paginatedCustomers = computed(() => customers.value);
+// Calculate total elements and pages based on the *filtered* list
+const totalElements = computed(() => filteredCustomers.value.length);
+const totalPages = computed(() => Math.ceil(totalElements.value / ITEMS_PER_PAGE));
+
+// Paginate the filtered list for display
+const paginatedCustomers = computed(() => {
+  // Ensure currentPage is not out of bounds after filtering
+  if (currentPage.value >= totalPages.value) {
+    currentPage.value = Math.max(0, totalPages.value - 1);
+  }
+
+  const start = currentPage.value * ITEMS_PER_PAGE;
+  const end = start + ITEMS_PER_PAGE;
+  return filteredCustomers.value.slice(start, end);
+});
+
+
+// --- WATCHERS ---
+watch(searchTerm, () => {
+  // When a new search is performed, always go back to the first page
+  currentPage.value = 0;
+});
 
 
 // --- HELPER METHODS ---
@@ -144,7 +167,6 @@ function handleAddCustomer() {
 
 function handleEditCustomer(customer) {
   editingCustomer.value = customer;
-  // Copy customer data to the reactive form object
   Object.assign(customerForm, customer);
   isModalOpen.value = true;
 }
@@ -162,14 +184,12 @@ function handleDeleteCustomer(customerId) {
 function nextPage() {
     if (currentPage.value < totalPages.value - 1) {
         currentPage.value++;
-        loadCustomers();
     }
 }
 
 function prevPage() {
     if (currentPage.value > 0) {
         currentPage.value--;
-        loadCustomers();
     }
 }
 
@@ -181,7 +201,6 @@ onMounted(() => {
 </script>
 
 <template>
-  <!-- Header -->
   <header class="bg-white dark:bg-slate-800/50 backdrop-blur-sm shadow-sm sticky top-0 z-10">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center py-4">
@@ -190,11 +209,9 @@ onMounted(() => {
     </div>
   </header>
 
-  <!-- Main Content -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col min-h-[calc(1030px-50px)]">
 
     <div class="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-sm flex flex-col flex-grow">
-      <!-- Error Message Display -->
       <div v-if="errorMessage" class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg relative" role="alert">
         <strong class="font-bold">Error: </strong>
         <span class="block sm:inline">{{ errorMessage }}</span>
@@ -203,15 +220,14 @@ onMounted(() => {
         </span>
       </div>
 
-      <!-- Controls: Search and Add Button -->
       <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
         <div class="relative w-full sm:max-w-xs">
           <div class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
           </div>
           <input
+              v-model="searchTerm"
               type="text"
-              placeholder="Search (requires backend support)"
+              placeholder="Search"
               class="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-slate-100 dark:bg-slate-700/50 focus:outline-none"
           />
         </div>
@@ -221,14 +237,11 @@ onMounted(() => {
         </button>
       </div>
 
-      <!-- Customer Table Area -->
       <div class="flex-grow overflow-x-auto">
-        <!-- Loading State -->
         <div v-if="isLoading" class="text-center py-12">
           <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
           <p class="mt-4 text-slate-500 dark:text-slate-400">Loading customers...</p>
         </div>
-        <!-- Table View -->
         <table v-else-if="paginatedCustomers.length > 0" class="w-full text-sm text-left text-slate-500 dark:text-slate-400">
           <thead class="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-300">
           <tr>
@@ -261,14 +274,16 @@ onMounted(() => {
           </tr>
           </tbody>
         </table>
-        <!-- Empty State -->
         <div v-else-if="!errorMessage" class="text-center py-12">
-          <h3 class="text-lg font-semibold text-slate-700 dark:text-slate-300">No Customers Found</h3>
-          <p class="mt-1 text-slate-500 dark:text-slate-400">Click "Add Customer" to get started.</p>
+           <h3 class="text-lg font-semibold text-slate-700 dark:text-slate-300">
+            {{ searchTerm ? `No results for "${searchTerm}"` : 'No Customers Found' }}
+          </h3>
+          <p class="mt-1 text-slate-500 dark:text-slate-400">
+            {{ searchTerm ? 'Try searching for something else.' : 'Click "Add Customer" to get started.' }}
+          </p>
         </div>
       </div>
 
-      <!-- Pagination -->
       <nav v-if="totalPages > 1" class="flex items-center justify-between pt-4" aria-label="Table navigation">
         <span class="text-sm font-normal text-slate-500 dark:text-slate-400">
             Page <span class="font-semibold text-slate-900 dark:text-white">{{ currentPage + 1 }}</span>
@@ -291,7 +306,6 @@ onMounted(() => {
     </div>
   </main>
 
-  <!-- Add/Edit Customer Modal -->
   <div v-if="isModalOpen" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4" @click="handleCloseModal">
     <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md" @click.stop>
       <form @submit.prevent="handleSaveCustomer">
@@ -302,7 +316,7 @@ onMounted(() => {
           <div class="space-y-4">
             <div>
               <label for="name" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Name</label>
-              <input type="text" id="name" v-model="customerForm.name" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white" />
+              <input ref="firstInput" type="text" id="name" v-model="customerForm.name" autofocus required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white" />
             </div>
             <div>
               <label for="email" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Email</label>
@@ -330,7 +344,6 @@ onMounted(() => {
     </div>
   </div>
 
-  <!-- Delete Confirmation Dialog -->
   <div v-if="isDeleteConfirmOpen" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4" @click="isDeleteConfirmOpen = false">
     <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-sm" @click.stop>
       <div class="p-6 text-center">
@@ -349,7 +362,6 @@ onMounted(() => {
     </div>
   </div>
 
-  <!-- Toast Notification -->
   <div v-if="toastMessage" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg flex items-center fade-in-out">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
     {{ toastMessage }}
@@ -357,7 +369,7 @@ onMounted(() => {
 </template>
 
 <style>
-<!-- Toast animation -->
+/* Toast animation */
 .fade-in-out {
     animation: fadeInOut 3s ease-in-out forwards;
 }

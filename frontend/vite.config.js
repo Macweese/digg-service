@@ -7,7 +7,7 @@ export default defineConfig({
     port: 5173,
     host: 'localhost',
     proxy: {
-      '/api': {
+      '/digg': {
         target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false

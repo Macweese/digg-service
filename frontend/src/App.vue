@@ -255,7 +255,6 @@ onMounted(() => {
         <table v-else-if="paginatedCustomers.length > 0" class="w-full text-sm text-left text-slate-500 dark:text-slate-400">
           <thead class="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-300">
           <tr>
-            <th scope="col" class="px-6 py-3">#</th>
             <th scope="col" class="px-6 py-3">Name</th>
             <th scope="col" class="px-6 py-3 hidden md:table-cell">Contact</th>
             <th scope="col" class="px-6 py-3 hidden lg:table-cell">Address</th>
@@ -264,7 +263,6 @@ onMounted(() => {
           </thead>
           <tbody>
           <tr v-for="customer in paginatedCustomers" :key="customer.id" class="bg-white dark:bg-slate-800 border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-            <td class="px-6 py-4 font-medium text-slate-900 dark:text-white whitespace-nowrap">{{ customer.id }}</td>
             <td class="px-6 py-4 font-medium text-slate-900 dark:text-white whitespace-nowrap">{{ customer.name }}</td>
             <td class="px-6 py-4 hidden md:table-cell">
               <div>{{ customer.email }}</div>

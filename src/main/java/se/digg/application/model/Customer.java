@@ -17,7 +17,7 @@ public class Customer
 	@NotBlank(message = "Address is required")
 	private String address;
 
-	@Email(message = "Email should be valid")
+	@Email(message = "Email should be valid: prefix@domain.com")
 	@NotBlank(message = "Email is required")
 	private String email;
 

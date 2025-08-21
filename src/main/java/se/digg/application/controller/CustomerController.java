@@ -11,12 +11,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import se.digg.application.model.Customer;
-import se.digg.application.service.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import se.digg.application.model.Customer;
+import se.digg.application.service.CustomerService;
 
 @Slf4j
 @RestController

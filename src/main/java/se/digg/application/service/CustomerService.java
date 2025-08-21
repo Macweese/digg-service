@@ -9,8 +9,8 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
-import se.digg.application.model.Customer;
 import org.springframework.stereotype.Service;
+import se.digg.application.model.Customer;
 
 @Service
 @Slf4j
@@ -125,7 +125,7 @@ public class CustomerService
 
 			// Sanitize names for address' local prefix
 			String email = Normalizer.normalize(firstName.toLowerCase() + "." + lastName.toLowerCase(), Normalizer.Form.NFD)
-				.replaceAll(emailAddressCharRegex, "")+ "@example.com";
+				.replaceAll(emailAddressCharRegex, "") + "@example.com";
 			String telephone = "070" + " xxx xx xx"/* +  String.format("%d", 100_00_00 + random.nextInt(900_00_00))*/;
 
 			createCustomer(new Customer(name, address, email, telephone));

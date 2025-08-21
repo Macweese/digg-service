@@ -44,7 +44,7 @@ async function loadCustomers() {
     totalElements.value = data.totalElements;
   } catch (error) {
     console.error("Failed to load customers:", error);
-    errorMessage.value = "Could not connect to the server or failed to load customers. Please ensure the backend is running.";
+    errorMessage.value = "Could not connect to the server or failed to load customers.";
     customers.value = []; // Clear data on error
   } finally {
     isLoading.value = false;
@@ -196,7 +196,7 @@ onMounted(() => {
     <div class="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-sm flex flex-col flex-grow">
       <!-- Error Message Display -->
       <div v-if="errorMessage" class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg relative" role="alert">
-        <strong class="font-bold">Error:</strong>
+        <strong class="font-bold">Error: </strong>
         <span class="block sm:inline">{{ errorMessage }}</span>
         <span class="absolute top-0 bottom-0 right-0 px-4 py-3" @click="errorMessage = ''">
           <svg class="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>

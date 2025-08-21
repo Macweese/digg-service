@@ -143,8 +143,16 @@ watch(isModalOpen, (newValue) => {
   }
 });
 
+watch(isDeleteConfirmOpen, (newValue) => {
+  if (newValue) {
+    document.addEventListener('keydown', handleKeydown);
+  } else {
+    document.removeEventListener('keydown', handleKeydown);
+  }
+});
+
 function handleKeydown(event) {
-  if (event.key === 'Escape' && isModalOpen.value) {
+  if (event.key === 'Escape' && (isModalOpen.value || isDeleteConfirmOpen.value)) {
     handleCloseModal();
   }
 }
@@ -185,6 +193,7 @@ function handleEditCustomer(customer) {
 function handleCloseModal() {
   isModalOpen.value = false;
   editingCustomer.value = null;
+  isDeleteConfirmOpen.value = null;
 }
 
 function handleDeleteCustomer(customerId) {

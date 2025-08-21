@@ -1,5 +1,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue';
+import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue'
+import { ChevronDownIcon } from '@heroicons/vue/20/solid'
 
 // --- STATE MANAGEMENT (Reactivity) ---
 const customers = ref([]); // Holds the complete list of customers from the API
@@ -13,6 +15,7 @@ const isDeleteConfirmOpen = ref(false);
 const customerToDelete = ref(null);
 const toastMessage = ref('');
 const errorMessage = ref('');
+const itemsPerPage = ref(10);
 
 // The form is a reactive object
 const customerForm = reactive({
@@ -24,7 +27,7 @@ const customerForm = reactive({
 });
 
 // --- CONSTANTS ---
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50];
 const BASE_API_URL = 'http://localhost:8080/digg/user';
 
 // --- API METHODS ---
@@ -115,7 +118,7 @@ const filteredCustomers = computed(() => {
 
 // Calculate total elements and pages based on the *filtered* list
 const totalElements = computed(() => filteredCustomers.value.length);
-const totalPages = computed(() => Math.ceil(totalElements.value / ITEMS_PER_PAGE));
+const totalPages = computed(() => Math.ceil(totalElements.value / itemsPerPage.value));
 
 // Paginate the filtered list for display
 const paginatedCustomers = computed(() => {
@@ -124,14 +127,31 @@ const paginatedCustomers = computed(() => {
     currentPage.value = Math.max(0, totalPages.value - 1);
   }
 
-  const start = currentPage.value * ITEMS_PER_PAGE;
-  const end = start + ITEMS_PER_PAGE;
+  const start = currentPage.value * itemsPerPage.value;
+  const end = start + itemsPerPage.value;
   return filteredCustomers.value.slice(start, end);
 });
+
+// Calculate dynamic height based on items per page
+const tableContainerHeight = computed(() => {
+  // Base height + additional height for more rows
+  const baseHeight = 600; // Base height for 10 items
+  const additionalHeightPerItem = 40; // Approx height per table row
+
+  // Calculate height based on selected items per page
+  return `${baseHeight + (itemsPerPage.value - 10) * additionalHeightPerItem}px`;
+
+});
+
 
 // --- WATCHERS ---
 watch(searchTerm, () => {
   // When a new search is performed, always go back to the first page
+  currentPage.value = 0;
+});
+
+// Reset to first page when items per page changes
+watch(itemsPerPage, () => {
   currentPage.value = 0;
 });
 
@@ -220,7 +240,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <header class="bg-white dark:bg-slate-800/50 backdrop-blur-sm shadow-sm sticky top-0 z-10">
+  <header class="bg-white dark:bg-slate-800/50 backdrop-blur-sm shadow-sm sticky top-0 z-10 fill 100">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center py-4">
         <h1 class="text-2xl font-bold text-slate-900 dark:text-white" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">Management dashboard</h1>
@@ -228,9 +248,9 @@ onMounted(() => {
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col min-h-[calc(1030px-50px)]">
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-    <div class="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-sm flex flex-col flex-grow">
+    <div class="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-sm">
       <div v-if="errorMessage" class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg relative" role="alert">
         <strong class="font-bold">Error: </strong>
         <span class="block sm:inline">{{ errorMessage }}</span>
@@ -250,13 +270,40 @@ onMounted(() => {
               class="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-slate-100 dark:bg-slate-700/50 focus:outline-none" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }"
           />
         </div>
-        <button @click="handleAddCustomer" class="w-full sm:w-auto flex items-center justify-center px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-900 transition-colors" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mr-2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" x2="19" y1="8" y2="14"></line><line x1="22" x2="16" y1="11" y2="11"></line></svg>
-          Add Customer
-        </button>
+
+        <div class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+          <div class="relative">
+            <select v-model="itemsPerPage" class="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-slate-100 dark:bg-slate-700/50 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none pr-8">
+              <option v-for="option in ITEMS_PER_PAGE_OPTIONS" :value="option">{{ option }} per page</option>
+            </select>
+            <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-slate-500">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+          </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+          <button @click="handleAddCustomer" class="flex items-center justify-center px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-900 transition-colors" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mr-2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" x2="19" y1="8" y2="14"></line><line x1="22" x2="16" y1="11" y2="11"></line></svg>
+            Add Customer
+          </button>
+        </div>
       </div>
 
-      <div class="flex-grow overflow-x-auto">
+      <div class="overflow-x-auto" :style="{ minHeight: tableContainerHeight }">
         <div v-if="isLoading" class="text-center py-12">
           <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
           <p class="mt-4 text-slate-500 dark:text-slate-400">Loading customers...</p>
@@ -264,7 +311,7 @@ onMounted(() => {
         <table v-else-if="paginatedCustomers.length > 0" class="w-full text-sm text-left text-slate-500 dark:text-slate-400 fixed-table">
           <thead class="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-300" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
           <tr>
-            <th scope="col" class="px-6 py-3" >Name</th>
+            <th scope="col" class="px-6 py-3">Name</th>
             <th scope="col" class="px-6 py-3 hidden md:table-cell">Contact</th>
             <th scope="col" class="px-6 py-3 hidden lg:table-cell">Address</th>
             <th scope="col" class="px-6 py-3 text-right">Actions</th>
@@ -391,6 +438,25 @@ onMounted(() => {
     animation: fadeInOut 3s ease-in-out forwards;
 }
 
+@keyframes fadeInOut {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    15% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    85% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+}
+
 /* Fixed table column widths */
 .fixed-table {
   table-layout: fixed;
@@ -430,22 +496,11 @@ onMounted(() => {
   word-wrap: break-word;
 }
 
-@keyframes fadeInOut {
-    0% {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    15% {
-        opacity: 1;
-        transform: translateY(0);
-    }
-    85% {
-        opacity: 1;
-        transform: translateY(0);
-    }
-    100% {
-        opacity: 0;
-        transform: translateY(20px);
-    }
+/* Custom select styling */
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1em;
 }
 </style>

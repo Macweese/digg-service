@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue';
+import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue';
 
 // --- STATE MANAGEMENT (Reactivity) ---
 const customers = ref([]); // Holds the complete list of customers from the API
@@ -22,12 +22,6 @@ const customerForm = reactive({
   email: '',
   telephone: ''
 });
-
-const openModal = async () => {
-  isModalOpen.value = true;
-  await nextTick();
-  firstInput.value?.focus();
-};
 
 // --- CONSTANTS ---
 const ITEMS_PER_PAGE = 10;
@@ -78,7 +72,7 @@ async function handleSaveCustomer() {
   }
 }
 
-// Delete a customer after confirmation
+// Delete customer after confirmation
 async function confirmDelete() {
   try {
     const response = await fetch(`${BASE_API_URL}/${customerToDelete.value}`, {
@@ -104,10 +98,9 @@ async function confirmDelete() {
   }
 }
 
-
 // --- COMPUTED PROPERTIES (Client-Side Logic) ---
 
-// Filter customers based on the search term
+// Filter customers based on search term
 const filteredCustomers = computed(() => {
   if (!searchTerm.value) {
     return customers.value;
@@ -136,13 +129,25 @@ const paginatedCustomers = computed(() => {
   return filteredCustomers.value.slice(start, end);
 });
 
-
 // --- WATCHERS ---
 watch(searchTerm, () => {
   // When a new search is performed, always go back to the first page
   currentPage.value = 0;
 });
 
+watch(isModalOpen, (newValue) => {
+  if (newValue) {
+    document.addEventListener('keydown', handleKeydown);
+  } else {
+    document.removeEventListener('keydown', handleKeydown);
+  }
+});
+
+function handleKeydown(event) {
+  if (event.key === 'Escape' && isModalOpen.value) {
+    handleCloseModal();
+  }
+}
 
 // --- HELPER METHODS ---
 
@@ -163,12 +168,18 @@ function handleAddCustomer() {
   editingCustomer.value = null;
   resetCustomerForm();
   isModalOpen.value = true;
+  nextTick(() => {
+    firstInput.value?.focus();
+  });
 }
 
 function handleEditCustomer(customer) {
   editingCustomer.value = customer;
   Object.assign(customerForm, customer);
   isModalOpen.value = true;
+  nextTick(() => {
+    firstInput.value?.focus();
+  });
 }
 
 function handleCloseModal() {
@@ -182,17 +193,16 @@ function handleDeleteCustomer(customerId) {
 }
 
 function nextPage() {
-    if (currentPage.value < totalPages.value - 1) {
-        currentPage.value++;
-    }
+  if (currentPage.value < totalPages.value - 1) {
+    currentPage.value++;
+  }
 }
 
 function prevPage() {
-    if (currentPage.value > 0) {
-        currentPage.value--;
-    }
+  if (currentPage.value > 0) {
+    currentPage.value--;
+  }
 }
-
 
 // --- LIFECYCLE HOOK ---
 onMounted(() => {
@@ -316,7 +326,7 @@ onMounted(() => {
           <div class="space-y-4">
             <div>
               <label for="name" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Name</label>
-              <input ref="firstInput" type="text" id="name" v-model="customerForm.name" autofocus required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white" />
+              <input ref="firstInput" type="text" id="name" v-model="customerForm.name" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white" />
             </div>
             <div>
               <label for="email" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Email</label>

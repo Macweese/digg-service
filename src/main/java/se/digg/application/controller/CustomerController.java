@@ -21,7 +21,7 @@ import se.digg.application.service.CustomerService;
 @Slf4j
 @RestController
 @RequestMapping("/digg/user")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://localhost:5173")
 @Tag(name = "Customer", description = "Customer management API")
 public class CustomerController
 {

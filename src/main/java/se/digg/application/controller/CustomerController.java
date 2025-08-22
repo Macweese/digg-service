@@ -14,7 +14,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import se.digg.application.model.Customer;
 import se.digg.application.service.CustomerService;
 
@@ -26,6 +36,9 @@ import se.digg.application.service.CustomerService;
 public class CustomerController
 {
 	@Autowired
+	private SimpMessagingTemplate messagingTemplate;
+
+	@Autowired
 	private CustomerService customerService;
 
 	@Operation(summary = "Get all customers", description = "Retrieve all customers from the system")
@@ -35,6 +48,7 @@ public class CustomerController
 	{
 		log.info("REST call: GET /digg/user");
 		List<Customer> customers = customerService.getAllCustomers();
+		messagingTemplate.convertAndSend("/topic/customers", customerService.getAllCustomers());
 		return ResponseEntity.ok(customers);
 	}
 
@@ -67,6 +81,7 @@ public class CustomerController
 		response.put("totalElements", totalCount);
 		response.put("hasNext", page < totalPages - 1);
 		response.put("hasPrevious", page > 0);
+		messagingTemplate.convertAndSend("/topic/customers", customerService.getAllCustomers());
 
 		return ResponseEntity.ok(response);
 	}
@@ -81,6 +96,7 @@ public class CustomerController
 	{
 		log.info("REST call: POST /digg/user with data: {}", customer);
 		Customer createdCustomer = customerService.createCustomer(customer);
+		messagingTemplate.convertAndSend("/topic/customers", customerService.getAllCustomers());
 		return ResponseEntity.status(HttpStatus.CREATED).body(createdCustomer);
 	}
 
@@ -94,6 +110,7 @@ public class CustomerController
 	{
 		log.info("REST call: GET /digg/user/{}", id);
 		Optional<Customer> customer = customerService.getCustomerById(id);
+		messagingTemplate.convertAndSend("/topic/customers", customerService.getAllCustomers());
 		return customer.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
 	}
 
@@ -111,6 +128,7 @@ public class CustomerController
 		log.info("REST call: PUT /digg/user/{} with data: {}", id, customer);
 
 		Optional<Customer> updatedCustomer = customerService.updateCustomer(id, customer);
+		messagingTemplate.convertAndSend("/topic/customers", customerService.getAllCustomers());
 		return updatedCustomer.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
 	}
 
@@ -124,6 +142,7 @@ public class CustomerController
 	{
 		log.info("REST call: DELETE /digg/user/{}", id);
 		boolean deleted = customerService.deleteCustomer(id);
+		messagingTemplate.convertAndSend("/topic/customers", customerService.getAllCustomers());
 		return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
 	}
 }

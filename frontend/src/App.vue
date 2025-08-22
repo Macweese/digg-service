@@ -69,7 +69,7 @@ async function handleSaveCustomer() {
       throw new Error('Failed to save the customer.');
     }
     await loadCustomers();
-    showToast(`Customer ${isEditing ? 'updated' : 'added'} successfully!`);
+    showToast(`Customer ${isEditing ? 'updated' : 'added'}`);
     handleCloseModal();
   } catch (error) {
     console.error("Failed to save customer:", error);
@@ -92,7 +92,7 @@ async function confirmDelete() {
     }
 
     await loadCustomers();
-    showToast('Customer deleted successfully!');
+    showToast('Customer deleted');
   } catch (error) {
     console.error("Failed to delete customer:", error);
     errorMessage.value = "Failed to delete customer. Please try again.";
@@ -447,7 +447,7 @@ onMounted(() => {
     </div>
   </div>
 
-  <div v-if="toastMessage" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg flex items-center fade-in-out">
+  <div v-if="toastMessage" class="fixed bottom-5 text-justify md:align-middle font-350 right-5 bg-green-700/40 text-white py-2 px-4 rounded-lg shadow-lg flex items-center fade-in-out" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
     {{ toastMessage }}
   </div>

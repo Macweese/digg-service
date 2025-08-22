@@ -2,6 +2,8 @@
 import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue';
 import { ChevronDownIcon } from '@heroicons/vue/20/solid';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
 
 // --- STATE MANAGEMENT (Reactivity) ---
 const customers = ref([]);
@@ -231,9 +233,32 @@ function prevPage() {
   }
 }
 
+
+// --- WEBSOCKET CONNECTION ---
+let stompClient = null;
+
+function connectWebSocket() {
+  const socket = new SockJS('http://localhost:8080/ws');
+  stompClient = new Client({
+    webSocketFactory: () => socket,
+    reconnectDelay: 5000,
+    onConnect: () => {
+      stompClient.subscribe('/topic/customers', (message) => {
+        customers.value = JSON.parse(message.body);
+        isLoading.value = false;
+      });
+    },
+    onStompError: (frame) => {
+      errorMessage.value = 'WebSocket error: ' + frame.headers['message'];
+    }
+  });
+  stompClient.activate();
+}
+
 // --- LIFECYCLE HOOK ---
 onMounted(() => {
   loadCustomers();
+  connectWebSocket();
 });
 </script>
 

@@ -296,7 +296,7 @@ onMounted(() => {
 
         <div class="flex flex-col sm:flex-row gap-20 w-full sm:w-auto">
           <Menu as="div" class="relative inline-block text-left">
-            <MenuButton class="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-slate-700 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-700/90">
+            <MenuButton class="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-slate-700 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-700/90" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
               {{ itemsPerPage }} per page
               <ChevronDownIcon class="-mr-1 h-5 w-5 text-indigo-200" aria-hidden="true" />
             </MenuButton>

@@ -1,16 +1,16 @@
 <script setup>
 import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue';
-import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue'
-import { ChevronDownIcon } from '@heroicons/vue/20/solid'
+import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue';
+import { ChevronDownIcon } from '@heroicons/vue/20/solid';
 
 // --- STATE MANAGEMENT (Reactivity) ---
-const customers = ref([]); // Holds the complete list of customers from the API
+const customers = ref([]);
 const isLoading = ref(true);
 const isModalOpen = ref(false);
 const firstInput = ref(null);
 const editingCustomer = ref(null);
 const searchTerm = ref('');
-const currentPage = ref(0); // 0-indexed for slice calculation
+const currentPage = ref(0);
 const isDeleteConfirmOpen = ref(false);
 const customerToDelete = ref(null);
 const toastMessage = ref('');
@@ -45,7 +45,7 @@ async function loadCustomers() {
   } catch (error) {
     console.error("Failed to load customers:", error);
     errorMessage.value = "Could not connect to the server or failed to load customers.";
-    customers.value = []; // Clear data on error
+    customers.value = [];
   } finally {
     isLoading.value = false;
   }
@@ -85,12 +85,11 @@ async function confirmDelete() {
       throw new Error('Failed to delete the customer.');
     }
 
-    // Adjust current page if the last item on a page was deleted
     if (paginatedCustomers.value.length === 1 && currentPage.value > 0) {
       currentPage.value--;
     }
 
-    await loadCustomers(); // Reload all data from the server
+    await loadCustomers();
     showToast('Customer deleted successfully!');
   } catch (error) {
     console.error("Failed to delete customer:", error);
@@ -122,7 +121,6 @@ const totalPages = computed(() => Math.ceil(totalElements.value / itemsPerPage.v
 
 // Paginate the filtered list for display
 const paginatedCustomers = computed(() => {
-  // Ensure currentPage is not out of bounds after filtering
   if (currentPage.value >= totalPages.value) {
     currentPage.value = Math.max(0, totalPages.value - 1);
   }
@@ -134,15 +132,10 @@ const paginatedCustomers = computed(() => {
 
 // Calculate dynamic height based on items per page
 const tableContainerHeight = computed(() => {
-  // Base height + additional height for more rows
-  const baseHeight = 600; // Base height for 10 items
-  const additionalHeightPerItem = 40; // Approx height per table row
-
-  // Calculate height based on selected items per page
+  const baseHeight = 600;
+  const additionalHeightPerItem = 40;
   return `${baseHeight + (itemsPerPage.value - 10) * additionalHeightPerItem}px`;
-
 });
-
 
 // --- WATCHERS ---
 watch(searchTerm, () => {
@@ -171,6 +164,11 @@ watch(isDeleteConfirmOpen, (newValue) => {
   }
 });
 
+// Reset to first page when items per page changes
+watch(itemsPerPage, () => {
+  currentPage.value = 0;
+});
+
 function handleKeydown(event) {
   if (event.key === 'Escape' && (isModalOpen.value || isDeleteConfirmOpen.value)) {
     handleCloseModal();
@@ -197,7 +195,7 @@ function handleAddCustomer() {
   resetCustomerForm();
   isModalOpen.value = true;
   nextTick(() => {
-    firstInput.value?.focus();
+    firstInput.value?.focus({ preventScroll: true });
   });
 }
 
@@ -206,7 +204,7 @@ function handleEditCustomer(customer) {
   Object.assign(customerForm, customer);
   isModalOpen.value = true;
   nextTick(() => {
-    firstInput.value?.focus();
+    firstInput.value?.focus({ preventScroll: true });
   });
 }
 
@@ -240,7 +238,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <header class="bg-white dark:bg-slate-800/50 backdrop-blur-sm shadow-sm sticky top-0 z-10 fill 100">
+  <header class="bg-white dark:bg-slate-800/50 backdrop-blur-sm shadow-sm sticky top-0 z-10">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center py-4">
         <h1 class="text-2xl font-bold text-slate-900 dark:text-white" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">Management dashboard</h1>
@@ -249,7 +247,6 @@ onMounted(() => {
   </header>
 
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
     <div class="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-sm">
       <div v-if="errorMessage" class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg relative" role="alert">
         <strong class="font-bold">Error: </strong>
@@ -262,6 +259,7 @@ onMounted(() => {
       <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
         <div class="relative w-full sm:max-w-xs">
           <div class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line></svg>
           </div>
           <input
               v-model="searchTerm"
@@ -271,30 +269,28 @@ onMounted(() => {
           />
         </div>
 
-        <div class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-          <div class="relative">
-            <select v-model="itemsPerPage" class="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-slate-100 dark:bg-slate-700/50 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none pr-8">
-              <option v-for="option in ITEMS_PER_PAGE_OPTIONS" :value="option">{{ option }} per page</option>
-            </select>
-            <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-slate-500">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><polyline points="6 9 12 15 18 9"></polyline></svg>
-            </div>
-          </div>
+        <div class="flex flex-col sm:flex-row gap-20 w-full sm:w-auto">
+          <Menu as="div" class="relative inline-block text-left">
+            <MenuButton class="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-slate-700 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-700/90">
+              {{ itemsPerPage }} per page
+              <ChevronDownIcon class="-mr-1 h-5 w-5 text-indigo-200" aria-hidden="true" />
+            </MenuButton>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+            <transition enter-active-class="transition ease-out duration-100" enter-from-class="transform opacity-0 scale-95" enter-to-class="transform opacity-100 scale-100" leave-active-class="transition ease-in duration-75" leave-from-class="transform opacity-100 scale-100" leave-to-class="transform opacity-0 scale-95">
+              <MenuItems class="absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-slate-800 dark:ring-white/10">
+                <div class="py-1">
+                  <MenuItem v-for="option in ITEMS_PER_PAGE_OPTIONS" :key="option" v-slot="{ active }">
+                    <button
+                      @click="itemsPerPage = option"
+                      :class="[active ? 'bg-indigo-100 text-indigo-900 dark:bg-slate-700 dark:text-white' : 'text-gray-700 dark:text-gray-300', 'block px-4 py-2 text-sm w-full text-left']"
+                    >
+                      {{ option }} per page
+                    </button>
+                  </MenuItem>
+                </div>
+              </MenuItems>
+            </transition>
+          </Menu>
 
           <button @click="handleAddCustomer" class="flex items-center justify-center px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-900 transition-colors" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mr-2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" x2="19" y1="8" y2="14"></line><line x1="22" x2="16" y1="11" y2="11"></line></svg>
@@ -354,6 +350,27 @@ onMounted(() => {
             of <span class="font-semibold text-slate-900 dark:text-white">{{ totalPages }}</span>
             (<span class="font-semibold text-slate-900 dark:text-white">{{ totalElements }}</span> entries)
         </span>
+          <Menu as="div" class="relative inline-block text-left">
+            <MenuButton class="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-slate-700 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-700/90">
+              {{ itemsPerPage }} per page
+              <ChevronDownIcon class="-mr-1 h-5 w-5 text-indigo-200" aria-hidden="true" />
+            </MenuButton>
+
+            <transition enter-active-class="transition ease-out duration-100" enter-from-class="transform opacity-0 scale-95" enter-to-class="transform opacity-100 scale-100" leave-active-class="transition ease-in duration-75" leave-from-class="transform opacity-100 scale-100" leave-to-class="transform opacity-0 scale-95">
+              <MenuItems class="absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-slate-800 dark:ring-white/10">
+                <div class="py-1">
+                  <MenuItem v-for="option in ITEMS_PER_PAGE_OPTIONS" :key="option" v-slot="{ active }">
+                    <button
+                      @click="itemsPerPage = option"
+                      :class="[active ? 'bg-indigo-100 text-indigo-900 dark:bg-slate-700 dark:text-white' : 'text-gray-700 dark:text-gray-300', 'block px-4 py-2 text-sm w-full text-left']"
+                    >
+                      {{ option }} per page
+                    </button>
+                  </MenuItem>
+                </div>
+              </MenuItems>
+            </transition>
+          </Menu>
         <ul class="inline-flex items-center -space-x-px">
           <li>
             <button @click="prevPage()" :disabled="currentPage === 0" class="px-3 py-2 ml-0 leading-tight text-slate-500 bg-white border border-slate-300 rounded-l-lg hover:bg-slate-100 hover:text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">

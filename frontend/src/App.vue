@@ -241,7 +241,7 @@ function connectWebSocket() {
   const socket = new SockJS('http://localhost:8080/ws');
   stompClient = new Client({
     webSocketFactory: () => socket,
-    reconnectDelay: 5000,
+    reconnectDelay: 60000,
     onConnect: () => {
       stompClient.subscribe('/topic/customers', (message) => {
         customers.value = JSON.parse(message.body);

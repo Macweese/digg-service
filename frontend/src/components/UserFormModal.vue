@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, watch } from 'vue';
+import { reactive, watch, onBeforeUnmount } from 'vue';
 import type { User } from '../types';
 
 const props = defineProps<{
@@ -38,6 +38,40 @@ watch(() => props.user, (u) => {
 function onSubmit(): void {
   emit('save', { ...form });
 }
+
+// Keyboard handlers: ESC closes, ENTER submits (with guards)
+function onKeydown(e: KeyboardEvent) {
+  if (!props.visible) return;
+
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    emit('close');
+    return;
+  }
+
+  if (
+    e.key === 'Enter' &&
+    !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey &&
+    // avoid IME confirm
+    !(e as any).isComposing &&
+    // don't intercept multiline inputs
+    !(e.target instanceof HTMLTextAreaElement)
+  ) {
+    // prevent default form auto-submit to avoid double submit
+    e.preventDefault();
+    onSubmit();
+  }
+}
+
+// Attach/detach the key listener only when visible
+watch(() => props.visible, (vis) => {
+  if (vis) document.addEventListener('keydown', onKeydown);
+  else document.removeEventListener('keydown', onKeydown);
+}, { immediate: true });
+
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', onKeydown);
+});
 </script>
 
 <template>

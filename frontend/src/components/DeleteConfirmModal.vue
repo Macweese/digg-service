@@ -1,6 +1,26 @@
 <script setup lang="ts">
+import { watch, onBeforeUnmount } from 'vue';
+
 const props = defineProps<{ visible: boolean }>();
 const emit = defineEmits<{ (e: 'cancel'): void; (e: 'confirm'): void }>();
+
+function onKeydown(e: KeyboardEvent) {
+  if (!props.visible) return;
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    emit('cancel');
+  }
+}
+
+// Attach/detach the key listener only when visible
+watch(() => props.visible, (vis) => {
+  if (vis) document.addEventListener('keydown', onKeydown);
+  else document.removeEventListener('keydown', onKeydown);
+}, { immediate: true });
+
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', onKeydown);
+});
 </script>
 
 <template>

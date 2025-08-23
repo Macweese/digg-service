@@ -128,7 +128,7 @@ public class UserServiceImpl implements UserService
 
 			if (!userRepository.findByEmail(email).isEmpty())
 			{
-				email = random.nextInt(10_000) + email;
+				email = System.nanoTime() + email;
 			}
 			createUser(new User(name, address, email, telephone));
 		}

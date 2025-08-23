@@ -11,11 +11,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.TestPropertySource;
-import se.digg.application.model.Customer;
+import se.digg.application.model.User;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(locations = "classpath:application-test.properties")
-public class CustomerServiceIntegrationTest
+public class UserServiceIntegrationTest
 {
 	@LocalServerPort
 	private int port;
@@ -28,7 +28,7 @@ public class CustomerServiceIntegrationTest
 	}
 
 	@Test
-	void testGetAllCustomers()
+	void testGetAllUsers()
 	{
 		given()
 			.when()
@@ -40,30 +40,30 @@ public class CustomerServiceIntegrationTest
 	}
 
 	@Test
-	void testCreateAndGetCustomer()
+	void testCreateAndGetUser()
 	{
-		Customer newCustomer = new Customer("Test Customer", "Test Address 123", "test@example.com", "070-0001100");
+		User newUser = new User("Test User", "Test Address 123", "test@example.com", "070-0001100");
 
-		// Create customer
-		int customerId = given()
+		// Create user
+		int userId = given()
 			.contentType(ContentType.JSON)
-			.body(newCustomer)
+			.body(newUser)
 			.when()
 			.post()
 			.then()
 			.statusCode(201)
-			.body("name", equalTo("Test Customer"))
+			.body("name", equalTo("Test User"))
 			.body("email", equalTo("test@example.com"))
 			.extract()
 			.path("id");
 
-		// Get created customer
+		// Get created user
 		given()
 			.when()
-			.get("/{id}", customerId)
+			.get("/{id}", userId)
 			.then()
 			.statusCode(200)
-			.body("name", equalTo("Test Customer"))
+			.body("name", equalTo("Test User"))
 			.body("address", equalTo("Test Address 123"))
 			.body("email", equalTo("test@example.com"))
 			.body("telephone", equalTo("070-0001100"));
@@ -79,20 +79,20 @@ public class CustomerServiceIntegrationTest
 			.get("/paginated")
 			.then()
 			.statusCode(200)
-			.body("customers.size()", lessThanOrEqualTo(5))
+			.body("users.size()", lessThanOrEqualTo(5))
 			.body("currentPage", equalTo(0))
 			.body("totalElements", greaterThan(0));
 	}
 
 	@Test
-	void testUpdateCustomer()
+	void testUpdateUser()
 	{
-		// Create customer
-		Customer newCustomer = new Customer("Original Name", "Original Address", "original@example.com", "000-0000000");
+		// Create user
+		User newUser = new User("Original Name", "Original Address", "original@example.com", "000-0000000");
 
-		int customerId = given()
+		int userId = given()
 			.contentType(ContentType.JSON)
-			.body(newCustomer)
+			.body(newUser)
 			.when()
 			.post()
 			.then()
@@ -100,14 +100,14 @@ public class CustomerServiceIntegrationTest
 			.extract()
 			.path("id");
 
-		// Update the customer
-		Customer updatedCustomer = new Customer("Updated Name", "Updated Address", "updated@example.com", "111-1111111");
+		// Update the user
+		User updatedUser = new User("Updated Name", "Updated Address", "updated@example.com", "111-1111111");
 
 		given()
 			.contentType(ContentType.JSON)
-			.body(updatedCustomer)
+			.body(updatedUser)
 			.when()
-			.put("/{id}", customerId)
+			.put("/{id}", userId)
 			.then()
 			.statusCode(200)
 			.body("name", equalTo("Updated Name"))
@@ -118,14 +118,14 @@ public class CustomerServiceIntegrationTest
 	}
 
 	@Test
-	void testDeleteCustomer()
+	void testDeleteUser()
 	{
-		// Create customer
-		Customer newCustomer = new Customer("To Delete", "Delete Address", "delete@example.com", "070-DELETE");
+		// Create user
+		User newUser = new User("To Delete", "Delete Address", "delete@example.com", "070-DELETE");
 
-		int customerId = given()
+		int userId = given()
 			.contentType(ContentType.JSON)
-			.body(newCustomer)
+			.body(newUser)
 			.when()
 			.post()
 			.then()
@@ -133,17 +133,17 @@ public class CustomerServiceIntegrationTest
 			.extract()
 			.path("id");
 
-		// Delete the customer
+		// Delete the user
 		given()
 			.when()
-			.delete("/{id}", customerId)
+			.delete("/{id}", userId)
 			.then()
 			.statusCode(204);
 
-		// Verify customer is deleted
+		// Verify user is deleted
 		given()
 			.when()
-			.get("/{id}", customerId)
+			.get("/{id}", userId)
 			.then()
 			.statusCode(404);
 	}
@@ -162,13 +162,13 @@ public class CustomerServiceIntegrationTest
 	}
 
 	@Test
-	void testCreateCustomerWithInvalidData()
+	void testCreateUserWithInvalidData()
 	{
-		Customer invalidCustomer = new Customer("", "", "invalid-email", "");
+		User invalidUser = new User("", "", "invalid-email", "");
 
 		given()
 			.contentType(ContentType.JSON)
-			.body(invalidCustomer)
+			.body(invalidUser)
 			.when()
 			.post()
 			.then()

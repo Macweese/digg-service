@@ -8,7 +8,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class Customer
+public class User
 {
 	private UUID id = UUID.randomUUID();
 
@@ -25,11 +25,11 @@ public class Customer
 	@NotBlank(message = "Telephone is required")
 	private String telephone;
 
-	public Customer()
+	public User()
 	{
 	}
 
-	public Customer(String name, String address, String email, String telephone)
+	public User(String name, String address, String email, String telephone)
 	{
 		this.id = UUID.randomUUID();
 		this.name = name;
@@ -38,7 +38,7 @@ public class Customer
 		this.telephone = telephone;
 	}
 
-	public Customer(UUID id, String name, String address, String email, String telephone)
+	public User(UUID id, String name, String address, String email, String telephone)
 	{
 		this.id = id;
 		this.name = name;
@@ -50,7 +50,7 @@ public class Customer
 	@Override
 	public String toString()
 	{
-		return "Customer{" +
+		return "User{" +
 			"id=" + id +
 			", name='" + name + '\'' +
 			", address='" + address + '\'' +

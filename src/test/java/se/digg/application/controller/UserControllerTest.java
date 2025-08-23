@@ -7,7 +7,6 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -23,31 +22,31 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import se.digg.application.model.Customer;
-import se.digg.application.service.CustomerService;
+import se.digg.application.model.User;
+import se.digg.application.service.UserService;
 
-@WebMvcTest(CustomerController.class)
-public class CustomerControllerTest
+@WebMvcTest(UserController.class)
+public class UserControllerTest
 {
 	@Autowired
 	private MockMvc mockMvc;
 
 	@MockBean
-	private CustomerService customerService;
+	private UserService userService;
 
 	@Autowired
 	private ObjectMapper objectMapper;
 
 	@Test
-	public void testGetAllCustomers() throws Exception
+	public void testGetAllUsers() throws Exception
 	{
 		// given
-		List<Customer> customers = Arrays.asList(
-			new Customer("Kajsa Anka", "Vägen 13, 67421 Staden", "kajsa@acme.org", "070-0701100"),
-			new Customer("Kalle Anka", "Vägen 31, 67422 Staden", "kalle@acme.org", "070-0702200")
+		List<User> users = Arrays.asList(
+			new User("Kajsa Anka", "Vägen 13, 67421 Staden", "kajsa@acme.org", "070-0701100"),
+			new User("Kalle Anka", "Vägen 31, 67422 Staden", "kalle@acme.org", "070-0702200")
 		);
 
-		when(customerService.getAllCustomers()).thenReturn(customers);
+		when(userService.getAllUsers()).thenReturn(users);
 
 		// when + then
 		mockMvc.perform(get("/digg/user"))
@@ -64,41 +63,41 @@ public class CustomerControllerTest
 			.andExpect(jsonPath("$[1].email").value("kalle@acme.org"))
 			.andExpect(jsonPath("$[1].telephone").value("070-0702200"));
 
-		verify(customerService).getAllCustomers();
+		verify(userService).getAllUsers();
 	}
 
 	@Test
-	public void testCreateCustomer() throws Exception
+	public void testCreateUser() throws Exception
 	{
 		// givem
-		Customer inputCustomer = new Customer("Ludde Luddson", "Hittepåvägen 13, 67421 Staden", "ludde@ludd.org", "070-0001100");
-		Customer savedCustomer = new Customer(UUID.randomUUID(), "Ludde Luddson", "Hittepåvägen 13, 67421 Staden", "ludde@ludd.org", "070-0001100");
+		User inputUser = new User("Ludde Luddson", "Hittepåvägen 13, 67421 Staden", "ludde@ludd.org", "070-0001100");
+		User savedUser = new User(UUID.randomUUID(), "Ludde Luddson", "Hittepåvägen 13, 67421 Staden", "ludde@ludd.org", "070-0001100");
 
-		when(customerService.createCustomer(any(Customer.class))).thenReturn(savedCustomer);
+		when(userService.createUser(any(User.class))).thenReturn(savedUser);
 
 		// when + then
 		mockMvc.perform(post("/digg/user")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(objectMapper.writeValueAsString(inputCustomer)))
+				.content(objectMapper.writeValueAsString(inputUser)))
 			.andExpect(status().isCreated())
 			.andExpect(content().contentType(MediaType.APPLICATION_JSON))
-			.andExpect(jsonPath("$.id").value(inputCustomer.getId()))
+			.andExpect(jsonPath("$.id").value(inputUser.getId()))
 			.andExpect(jsonPath("$.name").value("Ludde Luddson"))
 			.andExpect(jsonPath("$.address").value("Hittepåvägen 13, 67421 Staden"))
 			.andExpect(jsonPath("$.email").value("ludde@ludd.org"))
 			.andExpect(jsonPath("$.telephone").value("070-0001100"));
 
-		verify(customerService).createCustomer(any(Customer.class));
+		verify(userService).createUser(any(User.class));
 	}
 
 	@Test
-	public void testGetCustomerById() throws Exception
+	public void testGetUserById() throws Exception
 	{
 		// given
 		UUID id = UUID.randomUUID();
-		Customer customer = new Customer(id, "Kajsa Anka", "Vägen 13, 67421 Staden", "kajsa@acme.org", "070-0701100");
+		User user = new User(id, "Kajsa Anka", "Vägen 13, 67421 Staden", "kajsa@acme.org", "070-0701100");
 
-		when(customerService.getCustomerById(id)).thenReturn(Optional.of(customer));
+		when(userService.getUserById(id)).thenReturn(Optional.of(user));
 
 		// when + then
 		mockMvc.perform(get("/digg/user/" + id))
@@ -109,81 +108,81 @@ public class CustomerControllerTest
 			.andExpect(jsonPath("$.email").value("kajsa@acme.org"))
 			.andExpect(jsonPath("$.telephone").value("070-0701100"));
 
-		verify(customerService).getCustomerById(id);
+		verify(userService).getUserById(id);
 	}
 
 	@Test
-	public void testGetCustomerByIdNotFound() throws Exception
+	public void testGetUserByIdNotFound() throws Exception
 	{
 		// given
 		UUID id = UUID.randomUUID();
-		when(customerService.getCustomerById(id)).thenReturn(Optional.empty());
+		when(userService.getUserById(id)).thenReturn(Optional.empty());
 
 		// when + then
 		mockMvc.perform(get("/digg/user/" + id))
 			.andExpect(status().isNotFound());
 
-		verify(customerService).getCustomerById(id);
+		verify(userService).getUserById(id);
 	}
 
 	@Test
-	public void testUpdateCustomer() throws Exception
+	public void testUpdateUser() throws Exception
 	{
 		// given
-		Customer updatedCustomer = new Customer(any(UUID.class), "Updated Name", "Updated Address", "updated@email.com", "070-0001100");
+		User updatedUser = new User(any(UUID.class), "Updated Name", "Updated Address", "updated@email.com", "070-0001100");
 
-		when(customerService.updateCustomer(updatedCustomer.getId(), any(Customer.class))).thenReturn(Optional.of(updatedCustomer));
+		when(userService.updateUser(updatedUser.getId(), any(User.class))).thenReturn(Optional.of(updatedUser));
 
 		// when + then
-		mockMvc.perform(put("/digg/user/" + updatedCustomer.getId())
+		mockMvc.perform(put("/digg/user/" + updatedUser.getId())
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(objectMapper.writeValueAsString(updatedCustomer)))
+				.content(objectMapper.writeValueAsString(updatedUser)))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.name").value("Updated Name"));
 
-		verify(customerService).updateCustomer(updatedCustomer.getId(), any(Customer.class));
+		verify(userService).updateUser(updatedUser.getId(), any(User.class));
 	}
 
 	@Test
-	public void testDeleteCustomer() throws Exception
+	public void testDeleteUser() throws Exception
 	{
 		// given
 		UUID id = UUID.randomUUID();
-		when(customerService.deleteCustomer(id)).thenReturn(true);
+		when(userService.deleteUser(id)).thenReturn(true);
 
 		// when + then
 		mockMvc.perform(delete("/digg/user/" + id))
 			.andExpect(status().isNoContent());
 
-		verify(customerService).deleteCustomer(id);
+		verify(userService).deleteUser(id);
 	}
 
 	@Test
-	public void testDeleteCustomerNotFound() throws Exception
+	public void testDeleteUserNotFound() throws Exception
 	{
 		// given
 		UUID id = UUID.randomUUID();
-		when(customerService.deleteCustomer(id)).thenReturn(false);
+		when(userService.deleteUser(id)).thenReturn(false);
 
 		// when + then
 		mockMvc.perform(delete("/digg/user/" + id))
 			.andExpect(status().isNotFound());
 
-		verify(customerService).deleteCustomer(id);
+		verify(userService).deleteUser(id);
 	}
 
 	@Test
-	public void testCreateCustomerWithValidationError() throws Exception
+	public void testCreateUserWithValidationError() throws Exception
 	{
-		// given - Customer with invalid data (empty name)
-		Customer invalidCustomer = new Customer("", "Address", "invalid-email", "070-0001100");
+		// given - User with invalid data (empty name)
+		User invalidUser = new User("", "Address", "invalid-email", "070-0001100");
 
 		// when + then
 		mockMvc.perform(post("/digg/user")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(objectMapper.writeValueAsString(invalidCustomer)))
+				.content(objectMapper.writeValueAsString(invalidUser)))
 			.andExpect(status().isBadRequest());
 
-		verify(customerService, never()).createCustomer(any(Customer.class));
+		verify(userService, never()).createUser(any(User.class));
 	}
 }

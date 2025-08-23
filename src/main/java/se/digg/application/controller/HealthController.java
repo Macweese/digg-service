@@ -21,7 +21,7 @@ public class HealthController
 		Map<String, Object> health = new HashMap<>();
 		health.put("status", "UP");
 		health.put("timestamp", LocalDateTime.now());
-		health.put("service", "Customer Service");
+		health.put("service", "User Service");
 		health.put("version", "1.0.0");
 		return health;
 	}

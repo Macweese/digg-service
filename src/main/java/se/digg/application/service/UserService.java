@@ -8,87 +8,86 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import se.digg.application.model.Customer;
+import se.digg.application.model.User;
 
 @Service
 @Slf4j
-public class CustomerService
+public class UserService
 {
-	private final Map<UUID, Customer> customers = new ConcurrentHashMap<>();
+	private final Map<UUID, User> users = new ConcurrentHashMap<>();
 
-	public CustomerService()
+	public UserService()
 	{
 		// Populate with some dummy data ~~ for demo + testing
 		generateDummyData();
 	}
 
-	public List<Customer> getAllCustomers()
+	public List<User> getAllUsers()
 	{
-		log.info("Fetching all customers. Total count: {}", customers.size());
-		return new ArrayList<>(customers.values());
+		log.info("Fetching all users. Total count: {}", users.size());
+		return new ArrayList<>(users.values());
 	}
 
-	public List<Customer> getCustomersPaginated(int page, int size)
+	public List<User> getUsersPaginated(int page, int size)
 	{
-		log.info("Fetching customers - page: {}, size: {}", page, size);
+		log.info("Fetching users - page: {}, size: {}", page, size);
 
-		List<Customer> allCustomers = new ArrayList<>(customers.values());
+		List<User> allUsers = new ArrayList<>(users.values());
 		int start = page * size;
-		int end = Math.min(start + size, allCustomers.size());
+		int end = Math.min(start + size, allUsers.size());
 
-		if (start >= allCustomers.size())
+		if (start >= allUsers.size())
 		{
 			return new ArrayList<>();
 		}
 
-		return allCustomers.subList(start, end);
+		return allUsers.subList(start, end);
 	}
 
-	public Customer createCustomer(Customer customer)
+	public User createUser(User user)
 	{
-		customer.setId(UUID.randomUUID());
-		customers.put(customer.getId(), customer);
+		user.setId(UUID.randomUUID());
+		users.put(user.getId(), user);
 
-		log.info("Created new customer with ID: {}", customer.getId());
-		return customer;
+		log.info("Created new user with ID: {}", user.getId());
+		return user;
 	}
 
-	public Optional<Customer> getCustomerById(UUID id)
+	public Optional<User> getUserById(UUID id)
 	{
-		log.info("Fetching customer with ID: {}", id);
-		return Optional.ofNullable(customers.get(id));
+		log.info("Fetching user with ID: {}", id);
+		return Optional.ofNullable(users.get(id));
 	}
 
-	public Optional<Customer> updateCustomer(UUID id, Customer customerUpdate)
+	public Optional<User> updateUser(UUID id, User userUpdate)
 	{
-		if (customers.get(id) != null)
+		if (users.get(id) != null)
 		{
-			customerUpdate.setId(id);
-			customers.put(id, customerUpdate);
-			log.info("Updated customer with ID: {}", id);
-			return Optional.of(customerUpdate);
+			userUpdate.setId(id);
+			users.put(id, userUpdate);
+			log.info("Updated user with ID: {}", id);
+			return Optional.of(userUpdate);
 		}
-		log.warn("Customer with ID {} not found for update", id);
+		log.warn("User with ID {} not found for update", id);
 		return Optional.empty();
 	}
 
-	public boolean deleteCustomer(UUID id)
+	public boolean deleteUser(UUID id)
 	{
-		if (customers.remove(id) != null)
+		if (users.remove(id) != null)
 		{
-			log.info("Deleted customer with ID: {}", id);
+			log.info("Deleted user with ID: {}", id);
 			return true;
 		}
-		log.warn("Customer with ID {} not found for deletion", id);
+		log.warn("User with ID {} not found for deletion", id);
 		return false;
 	}
 
 	public int getTotalCount()
 	{
-		return customers.size();
+		return users.size();
 	}
 
 	private void generateDummyData()
@@ -119,9 +118,9 @@ public class CustomerService
 				.replaceAll(emailAddressCharRegex, "") + "@example.com";
 			String telephone = "070" + " xxx xx xx"/* +  String.format("%d", 100_00_00 + random.nextInt(900_00_00))*/;
 
-			createCustomer(new Customer(name, address, email, telephone));
+			createUser(new User(name, address, email, telephone));
 		}
 
-		log.info("Generated {} entries of dummy data", customers.size());
+		log.info("Generated {} entries of dummy data", users.size());
 	}
 }

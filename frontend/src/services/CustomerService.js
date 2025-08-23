@@ -39,42 +39,42 @@ apiClient.interceptors.response.use(
   }
 )
 
-export const customerService = {
-  // Get all customers
-  getAllCustomers() {
-    return apiClient.get('/customers')
+export const userService = {
+  // Get all users
+  getAllUsers() {
+    return apiClient.get('/users')
   },
 
-  // Get customer by ID
-  getCustomerById(id) {
-    return apiClient.get(`/customers/${id}`)
+  // Get user by ID
+  getUserById(id) {
+    return apiClient.get(`/users/${id}`)
   },
 
-  // Create new customer
-  createCustomer(customerData) {
-    return apiClient.post('/customers', customerData)
+  // Create new user
+  createUser(userData) {
+    return apiClient.post('/users', userData)
   },
 
-  // Update existing customer
-  updateCustomer(id, customerData) {
-    return apiClient.put(`/customers/${id}`, customerData)
+  // Update existing user
+  updateUser(id, userData) {
+    return apiClient.put(`/users/${id}`, userData)
   },
 
-  // Delete customer
-  deleteCustomer(id) {
-    return apiClient.delete(`/customers/${id}`)
+  // Delete user
+  deleteUser(id) {
+    return apiClient.delete(`/users/${id}`)
   },
 
-  // Search customers ~~ not added in backend for demo
-  searchCustomers(query) {
-    return apiClient.get('/customers/search', {
+  // Search users ~~ not added in backend for demo
+  searchUsers(query) {
+    return apiClient.get('/users/search', {
       params: { q: query }
     })
   },
 
-  // Get customers with pagination
-  getCustomersPaginated(page = 1, size = 10, sortBy = 'name', sortDir = 'asc') {
-    return apiClient.get('/customers', {
+  // Get users with pagination
+  getUsersPaginated(page = 1, size = 10, sortBy = 'name', sortDir = 'asc') {
+    return apiClient.get('/users', {
       params: {
         page: page - 1, // Spring boot 0-indexed
         size,
@@ -84,4 +84,4 @@ export const customerService = {
   }
 }
 
-export default customerService
+export default userService

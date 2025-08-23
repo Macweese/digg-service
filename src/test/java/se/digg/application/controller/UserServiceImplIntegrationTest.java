@@ -15,7 +15,7 @@ import se.digg.application.model.User;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(locations = "classpath:application-test.properties")
-public class UserServiceIntegrationTest
+public class UserServiceImplIntegrationTest
 {
 	@LocalServerPort
 	private int port;

@@ -4,15 +4,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -23,7 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import se.digg.application.model.User;
-import se.digg.application.service.UserService;
+import se.digg.application.service.UserServiceImpl;
 
 @WebMvcTest(UserController.class)
 public class UserControllerTest
@@ -32,7 +34,7 @@ public class UserControllerTest
 	private MockMvc mockMvc;
 
 	@MockBean
-	private UserService userService;
+	private UserServiceImpl userServiceImpl;
 
 	@Autowired
 	private ObjectMapper objectMapper;
@@ -46,7 +48,7 @@ public class UserControllerTest
 			new User("Kalle Anka", "Vägen 31, 67422 Staden", "kalle@acme.org", "070-0702200")
 		);
 
-		when(userService.getAllUsers()).thenReturn(users);
+		when(userServiceImpl.getUsers(Pageable.unpaged()).get().collect(Collectors.toList())).thenReturn(users);
 
 		// when + then
 		mockMvc.perform(get("/digg/user"))
@@ -63,7 +65,7 @@ public class UserControllerTest
 			.andExpect(jsonPath("$[1].email").value("kalle@acme.org"))
 			.andExpect(jsonPath("$[1].telephone").value("070-0702200"));
 
-		verify(userService).getAllUsers();
+		verify(userServiceImpl).getUsers(Pageable.unpaged());
 	}
 
 	@Test
@@ -71,9 +73,9 @@ public class UserControllerTest
 	{
 		// givem
 		User inputUser = new User("Ludde Luddson", "Hittepåvägen 13, 67421 Staden", "ludde@ludd.org", "070-0001100");
-		User savedUser = new User(UUID.randomUUID(), "Ludde Luddson", "Hittepåvägen 13, 67421 Staden", "ludde@ludd.org", "070-0001100");
+		User savedUser = new User(2L, "Ludde Luddson", "Hittepåvägen 13, 67421 Staden", "ludde@ludd.org", "070-0001100");
 
-		when(userService.createUser(any(User.class))).thenReturn(savedUser);
+		when(userServiceImpl.createUser(any(User.class))).thenReturn(savedUser);
 
 		// when + then
 		mockMvc.perform(post("/digg/user")
@@ -81,26 +83,25 @@ public class UserControllerTest
 				.content(objectMapper.writeValueAsString(inputUser)))
 			.andExpect(status().isCreated())
 			.andExpect(content().contentType(MediaType.APPLICATION_JSON))
-			.andExpect(jsonPath("$.id").value(inputUser.getId()))
+			.andExpect(jsonPath("$.id").value(2L))
 			.andExpect(jsonPath("$.name").value("Ludde Luddson"))
 			.andExpect(jsonPath("$.address").value("Hittepåvägen 13, 67421 Staden"))
 			.andExpect(jsonPath("$.email").value("ludde@ludd.org"))
 			.andExpect(jsonPath("$.telephone").value("070-0001100"));
 
-		verify(userService).createUser(any(User.class));
+		verify(userServiceImpl).createUser(any(User.class));
 	}
 
 	@Test
 	public void testGetUserById() throws Exception
 	{
 		// given
-		UUID id = UUID.randomUUID();
-		User user = new User(id, "Kajsa Anka", "Vägen 13, 67421 Staden", "kajsa@acme.org", "070-0701100");
+		User user = new User(2L, "Kajsa Anka", "Vägen 13, 67421 Staden", "kajsa@acme.org", "070-0701100");
 
-		when(userService.getUserById(id)).thenReturn(Optional.of(user));
+		when(userServiceImpl.getUserById(2L)).thenReturn(Optional.of(user));
 
 		// when + then
-		mockMvc.perform(get("/digg/user/" + id))
+		mockMvc.perform(get("/digg/user/2"))
 			.andExpect(status().isOk())
 			.andExpect(content().contentType(MediaType.APPLICATION_JSON))
 			.andExpect(jsonPath("$.name").value("Kajsa Anka"))
@@ -108,30 +109,29 @@ public class UserControllerTest
 			.andExpect(jsonPath("$.email").value("kajsa@acme.org"))
 			.andExpect(jsonPath("$.telephone").value("070-0701100"));
 
-		verify(userService).getUserById(id);
+		verify(userServiceImpl).getUserById(2L);
 	}
 
 	@Test
 	public void testGetUserByIdNotFound() throws Exception
 	{
 		// given
-		UUID id = UUID.randomUUID();
-		when(userService.getUserById(id)).thenReturn(Optional.empty());
+		when(userServiceImpl.getUserById(999L)).thenReturn(Optional.empty());
 
 		// when + then
-		mockMvc.perform(get("/digg/user/" + id))
+		mockMvc.perform(get("/digg/user/999"))
 			.andExpect(status().isNotFound());
 
-		verify(userService).getUserById(id);
+		verify(userServiceImpl).getUserById(999L);
 	}
 
 	@Test
 	public void testUpdateUser() throws Exception
 	{
 		// given
-		User updatedUser = new User(any(UUID.class), "Updated Name", "Updated Address", "updated@email.com", "070-0001100");
+		User updatedUser = new User(anyLong(), "Updated Name", "Updated Address", "updated@email.com", "070-0001100");
 
-		when(userService.updateUser(updatedUser.getId(), any(User.class))).thenReturn(Optional.of(updatedUser));
+		when(userServiceImpl.updateUser(updatedUser.getId(), any(User.class))).thenReturn(Optional.of(updatedUser));
 
 		// when + then
 		mockMvc.perform(put("/digg/user/" + updatedUser.getId())
@@ -140,35 +140,33 @@ public class UserControllerTest
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.name").value("Updated Name"));
 
-		verify(userService).updateUser(updatedUser.getId(), any(User.class));
+		verify(userServiceImpl).updateUser(updatedUser.getId(), any(User.class));
 	}
 
 	@Test
 	public void testDeleteUser() throws Exception
 	{
 		// given
-		UUID id = UUID.randomUUID();
-		when(userService.deleteUser(id)).thenReturn(true);
+		when(userServiceImpl.deleteUser(1L));
 
 		// when + then
-		mockMvc.perform(delete("/digg/user/" + id))
+		mockMvc.perform(delete("/digg/user/1L"))
 			.andExpect(status().isNoContent());
 
-		verify(userService).deleteUser(id);
+		verify(userServiceImpl).deleteUser(1L);
 	}
 
 	@Test
 	public void testDeleteUserNotFound() throws Exception
 	{
 		// given
-		UUID id = UUID.randomUUID();
-		when(userService.deleteUser(id)).thenReturn(false);
+		when(userServiceImpl.deleteUser(1L)).thenReturn(false);
 
 		// when + then
-		mockMvc.perform(delete("/digg/user/" + id))
+		mockMvc.perform(delete("/digg/user/1"))
 			.andExpect(status().isNotFound());
 
-		verify(userService).deleteUser(id);
+		verify(userServiceImpl).deleteUser(1L);
 	}
 
 	@Test
@@ -183,6 +181,6 @@ public class UserControllerTest
 				.content(objectMapper.writeValueAsString(invalidUser)))
 			.andExpect(status().isBadRequest());
 
-		verify(userService, never()).createUser(any(User.class));
+		verify(userServiceImpl, never()).createUser(any(User.class));
 	}
 }

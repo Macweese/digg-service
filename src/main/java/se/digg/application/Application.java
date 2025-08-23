@@ -15,9 +15,9 @@ import org.springframework.context.ConfigurableApplicationContext;
 @SpringBootApplication
 @OpenAPIDefinition(
 	info = @Info(
-		title = "Digg Service API",
+		title = "Digg",
 		version = "1.0.0",
-		description = "Description ... REST API",
+		description = "DIGGar du vår tjänst? ;)",
 		contact = @Contact(
 			name = "Contact person / department",
 			email = "support@example.se"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, onBeforeUnmount, ref } from 'vue';
 import type { User } from './types';
 
 import AppHeader from './components/AppHeader.vue';
@@ -14,7 +14,6 @@ import { useUsers } from './composables/useUsers';
 import { useWebSocketUsers } from './composables/useWebSocketUsers';
 import { saveUser, deleteUser as apiDeleteUser } from './services/UserService';
 
-// Core state via composable
 const {
   usersPage,
   searchTerm,
@@ -37,6 +36,21 @@ const {
   openDeleteConfirm,
   closeDeleteConfirm,
 } = useUsers();
+
+// Ctrl + K → focus search
+const searchInputRef = ref<HTMLInputElement | null>(null);
+function onGlobalKeydown(e: KeyboardEvent) {
+  // Support Ctrl+K on Windows/Linux and Cmd+K on macOS
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault();
+    const el = searchInputRef.value;
+    if (el) {
+      el.focus();
+      // Select text so user can start typing immediately
+      el.select?.();
+    }
+  }
+}
 
 async function handleSaveUser(user: User) {
   try {
@@ -62,13 +76,16 @@ async function confirmDelete() {
   }
 }
 
-// WebSocket that reloads users on events
 useWebSocketUsers(async () => {
   await loadUsers();
 });
 
 onMounted(() => {
+  document.addEventListener('keydown', onGlobalKeydown);
   loadUsers();
+});
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', onGlobalKeydown);
 });
 </script>
 
@@ -79,30 +96,43 @@ onMounted(() => {
 
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-sm">
+
       <ErrorRailAlert
         :message="errorMessage"
         @cleared="errorMessage = ''"
       />
 
+      <!-- Controls -->
       <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+        <!-- Search with Ctrl + K hint -->
         <div class="relative w-full sm:max-w-xs">
-          <div class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400">
+          <div class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400/70">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line></svg>
           </div>
           <input
+            ref="searchInputRef"
             v-model="searchTerm"
             type="text"
             placeholder="Search"
-            class="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-slate-100 dark:bg-slate-700/50 focus:outline-none focus-visible:bg-slate-900/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-500 focus-visible:ring-offset-0"
-            :style="{ userSelect: 'none', WebkitUserSelect: 'none' }"
+            class="w-full pl-10 pr-20 py-2 font-semibold text-slate-400/10 text-sm border tracking-wider border-slate-300 dark:border-slate-600 rounded-md bg-slate-100 dark:bg-slate-700/50 focus:outline-none focus-visible:bg-slate-900/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-500 focus-visible:ring-offset-0 transition delay-50 duration-150 ease-in-out"
+            :style="{ fontFamily: 'Courier New, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace', userSelect: 'none', WebkitUserSelect: 'none' }"
           />
+          <!-- Monospace keybind hint on the right -->
+          <span
+            class="pointer-events-none absolute right-7 top-1/2 -translate-y-1/2 text-xs text-slate-400/70 font-bold"
+            :style="{ fontFamily: 'Courier New, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }"
+            aria-hidden="true"
+          >
+            Ctrl + k
+          </span>
         </div>
 
         <div class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+          <!-- Items per page select (slightly darker + slim border) -->
           <div class="relative">
             <select
               v-model.number="itemsPerPage"
-              class="px-3 py-2 text-sm rounded-md bg-slate-100 dark:bg-slate-700/50 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200"
+              class="px-3 py-2 text-sm rounded-md bg-slate-200 dark:bg-slate-700/70 border border-slate-400 dark:border-slate-600 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-400 dark:focus:ring-slate-500"
               :style="{ userSelect: 'none', WebkitUserSelect: 'none' }"
             >
               <option :value="10">10 per page</option>
@@ -125,6 +155,7 @@ onMounted(() => {
         </div>
       </div>
 
+      <!-- Table / Empty / Spinner -->
       <div class="overflow-x-auto" :style="{ minHeight: '600px' }">
         <div v-if="showLoading" class="text-center py-12">
           <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
@@ -148,6 +179,7 @@ onMounted(() => {
         </div>
       </div>
 
+      <!-- Pagination -->
       <PaginationControls
         v-if="usersPage.totalPages > 1"
         :current-page="currentPage"
@@ -159,6 +191,7 @@ onMounted(() => {
     </div>
   </main>
 
+  <!-- Add/Edit Modal -->
   <UserFormModal
     :visible="isModalOpen"
     :user="editingUser"
@@ -166,6 +199,7 @@ onMounted(() => {
     @save="handleSaveUser"
   />
 
+  <!-- Delete Confirm Modal -->
   <DeleteConfirmModal
     :visible="isDeleteConfirmOpen"
     @cancel="closeDeleteConfirm"
@@ -176,10 +210,34 @@ onMounted(() => {
 </template>
 
 <style>
+/* Keep native select chevron style consistent */
 select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.5rem center;
   background-size: 1em;
+}
+
+/* Darker dropdown menu items (browser support varies) */
+select option {
+  background-color: #e2e8f0; /* slate-300 */
+  color: #0f172a;            /* slate-900 */
+}
+select option:checked {
+  background-color: #c7d2fe; /* indigo-200 */
+  color: #111827;            /* gray-900 */
+}
+
+/* Dark mode options */
+.dark select option {
+  background-color: #111827; /* gray-900 */
+  color: #e5e7eb;            /* gray-200 */
+}
+.dark select option:checked {
+  background-color: #374151; /* gray-700 */
+  color: #f9fafb;            /* gray-50 */
 }
 </style>

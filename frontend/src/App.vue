@@ -23,9 +23,13 @@ const userToDelete = ref(null);
 const toastMessage = ref('');
 const errorMessage = ref('');
 const itemsPerPage = ref(10);
-const isLoading = ref(false)
-const showLoading = ref(false)
-let loadingTimeout = null
+const isLoading = ref(false);
+const showLoading = ref(false);
+let loadingTimeout = null;
+
+// Error animation controls (single wrapper for rail + alert)
+const showErrorGroup = ref(false);
+const showErrorAlert = ref(false); // alert panel visibility inside the group
 
 const userForm = reactive({
   id: null,
@@ -41,37 +45,36 @@ const BASE_API_URL = 'http://localhost:8080/digg/user';
 
 // --- METHODS ---
 async function loadUsers() {
-  isLoading.value = true
-  showLoading.value = false
-  if (loadingTimeout) clearTimeout(loadingTimeout)
+  isLoading.value = true;
+  showLoading.value = false;
+  if (loadingTimeout) clearTimeout(loadingTimeout);
   loadingTimeout = setTimeout(() => {
-    if (isLoading.value) showLoading.value = true
-  }, 350)
+    if (isLoading.value) showLoading.value = true;
+  }, 350);
 
-  let url
-  let query = searchTerm.value.trim()
+  let url;
+  let query = searchTerm.value.trim();
 
   if (query) {
-    url = `${BASE_API_URL}/${currentPage.value}/${itemsPerPage.value}/search/${encodeURIComponent(query)}`
+    url = `${BASE_API_URL}/${currentPage.value}/${itemsPerPage.value}/search/${encodeURIComponent(query)}`;
   } else {
-    url = `${BASE_API_URL}/${currentPage.value}/${itemsPerPage.value}`
+    url = `${BASE_API_URL}/${currentPage.value}/${itemsPerPage.value}`;
   }
 
   try {
-    const response = await fetch(url)
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-    const page = await response.json()
-    usersPage.value = page
-    usersPage.value.content = usersPage.value.content || []
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const page = await response.json();
+    usersPage.value = page;
+    usersPage.value.content = usersPage.value.content || [];
   } catch (error) {
-    errorMessage.value = "Could not load users: " + error.message
+    errorMessage.value = 'Could not load users: ' + error.message;
   } finally {
-    isLoading.value = false
-    if (loadingTimeout) clearTimeout(loadingTimeout)
-    // Wait for the next tick to hide the spinner, in case the DOM hasn't updated yet
+    isLoading.value = false;
+    if (loadingTimeout) clearTimeout(loadingTimeout);
     setTimeout(() => {
-      showLoading.value = false
-    }, 0)
+      showLoading.value = false;
+    }, 0);
   }
 }
 
@@ -91,7 +94,7 @@ async function handleSaveUser() {
     handleCloseModal();
     await loadUsers();
   } catch (error) {
-    errorMessage.value = "Failed to save user. " + error.message;
+    errorMessage.value = 'Failed to save user. ' + error.message;
   }
 }
 
@@ -104,7 +107,7 @@ async function confirmDelete() {
     showToast('User deleted');
     await loadUsers();
   } catch (error) {
-    errorMessage.value = "Failed to delete user. " + error.message;
+    errorMessage.value = 'Failed to delete user. ' + error.message;
   } finally {
     isDeleteConfirmOpen.value = false;
     userToDelete.value = null;
@@ -124,6 +127,21 @@ watch(currentPage, () => {
   loadUsers();
 });
 
+// When a new error arrives, replay the group animation:
+// 1) show wrapper (rail grows), 2) then alert slides in, 3) on close both collapse together.
+watch(errorMessage, async (val, oldVal) => {
+  if (val) {
+    // If already visible, restart to replay animation
+    if (showErrorGroup.value) {
+      showErrorGroup.value = false;
+      showErrorAlert.value = false;
+      await nextTick();
+    }
+    showErrorAlert.value = false;
+    showErrorGroup.value = true;
+  }
+});
+
 watch(isModalOpen, (newValue) => {
   if (newValue) document.addEventListener('keydown', handleKeydown);
   else document.removeEventListener('keydown', handleKeydown);
@@ -141,7 +159,7 @@ function handleKeydown(event) {
 
 function showToast(message) {
   toastMessage.value = message;
-  setTimeout(() => { toastMessage.value = '' }, 3000);
+  setTimeout(() => { toastMessage.value = ''; }, 3000);
 }
 
 function resetUserForm() {
@@ -198,6 +216,84 @@ function prevPage() {
   });
 }
 
+// --- Error animation helpers (wrapper height drives both rail + alert) ---
+const RAIL_DURATION = 350;   // ms
+const ALERT_SLIDE_MS = 280;  // ms
+
+function dismissError() {
+  // Start group leave; after-leave will clear message and flags
+  showErrorGroup.value = false;
+}
+
+function groupBeforeEnter(el) {
+  el.style.overflow = 'hidden';
+  el.style.height = '0px';
+  el.classList.remove('leaving');
+}
+
+function groupEnter(el, done) {
+  // Stage 1: Expand to rail height
+  requestAnimationFrame(() => {
+    el.style.transition = `height ${RAIL_DURATION}ms ease`;
+    el.style.height = '3px';
+  });
+
+  // Stage 2 (after rail grows): reveal alert and expand wrapper to final height
+  setTimeout(async () => {
+    showErrorAlert.value = true; // alert panel fades/slides in via CSS
+    await nextTick();
+    const target = el.scrollHeight; // includes the alert now
+    // Transition to full height
+    el.style.transition = `height ${ALERT_SLIDE_MS}ms ease`;
+    // force reflow
+    void el.offsetHeight;
+    el.style.height = target + 'px';
+
+    const onEnd = (e) => {
+      if (e.propertyName === 'height') {
+        el.removeEventListener('transitionend', onEnd);
+        done();
+      }
+    };
+    el.addEventListener('transitionend', onEnd);
+  }, RAIL_DURATION);
+}
+
+function groupAfterEnter(el) {
+  // Cleanup to allow natural layout
+  el.style.height = '';
+  el.style.overflow = '';
+  el.style.transition = '';
+}
+
+function groupBeforeLeave(el) {
+  el.classList.add('leaving'); // children fade/slide out while the group collapses
+  el.style.overflow = 'hidden';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+function groupLeave(el, done) {
+  requestAnimationFrame(() => {
+    el.style.transition = `height ${ALERT_SLIDE_MS}ms ease`;
+    // Force reflow to ensure height is applied
+    void el.offsetHeight;
+    el.style.height = '0px';
+    const onEnd = (e) => {
+      if (e.propertyName === 'height') {
+        el.removeEventListener('transitionend', onEnd);
+        done();
+      }
+    };
+    el.addEventListener('transitionend', onEnd);
+  });
+}
+
+function groupAfterLeave() {
+  // Fully reset after collapse finishes
+  showErrorAlert.value = false;
+  errorMessage.value = '';
+}
+
 // --- WEBSOCKET ---
 let stompClient = null;
 function connectWebSocket() {
@@ -247,25 +343,57 @@ onMounted(() => {
 
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-sm">
-        <div v-if="errorMessage" class="border-s-4 m-1 mb-5 border-red-400/50 bg-red-800/30 p-4 rounded-sm">
-            <div class="flex justify-between items-start">
-                <div class="flex items-center gap-2 text-red-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    <strong class="font-normal">Something went wrong</strong>
-                </div>
-                <div class="flex justify-self-end text-red-400 cursor-pointer hover:text-red-300 transition-colors" @click="errorMessage = ''">
-                    <svg class="fill-current h-6 w-6 text-red-400" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                        <title>Close</title>
-                        <path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/>
-                    </svg>
-                </div>
+      <!-- Error rail + alert as a single collapsible group -->
+      <div class="m-1 mb-5">
+        <Transition
+          @before-enter="groupBeforeEnter"
+          @enter="groupEnter"
+          @after-enter="groupAfterEnter"
+          @before-leave="groupBeforeLeave"
+          @leave="groupLeave"
+          @after-leave="groupAfterLeave"
+        >
+          <div v-if="showErrorGroup" class="error-group-wrapper">
+            <!-- Rail (expands from center) -->
+            <div class="relative">
+              <div class="error-rail"></div>
+              <span class="rail-dot" aria-hidden="true"></span>
             </div>
-            <p class="mt-2 text-sm text-red-300">
-                <strong class="font-medium">Error&emsp;</strong> {{ errorMessage }}
-            </p>
-        </div>
+
+            <!-- Alert panel (fades/slides while wrapper height animates) -->
+            <div
+              class="border-s-4 border-red-400/50 bg-red-800/30 p-4 rounded-sm alert-panel"
+              :class="{ 'shown': showErrorAlert }"
+              role="alert"
+            >
+              <div class="flex justify-between items-start">
+                <div class="flex items-center gap-2 text-red-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <strong class="font-normal">Something went wrong</strong>
+                </div>
+                <button
+                  type="button"
+                  class="flex justify-self-end text-red-400 cursor-pointer hover:text-red-300 transition-colors"
+                  @click="dismissError"
+                  aria-label="Dismiss error"
+                  title="Close"
+                >
+                  <svg class="fill-current h-6 w-6 text-red-400" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                    <title>Close</title>
+                    <path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/>
+                  </svg>
+                </button>
+              </div>
+              <p class="mt-2 text-sm text-red-300">
+                <strong class="font-medium">Error&nbsp;</strong> {{ errorMessage }}
+              </p>
+            </div>
+          </div>
+        </Transition>
+      </div>
+
       <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
         <div class="relative w-full sm:max-w-xs">
           <div class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400">
@@ -275,7 +403,8 @@ onMounted(() => {
             v-model="searchTerm"
             type="text"
             placeholder="Search"
-            class="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-slate-100 dark:bg-slate-700/50 focus:outline-none focus-visible:bg-slate-900/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-500 focus-visible:ring-offset-0" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }"
+            class="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-slate-100 dark:bg-slate-700/50 focus:outline-none focus-visible:bg-slate-900/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-500 focus-visible:ring-offset-0"
+            :style="{ userSelect: 'none', WebkitUserSelect: 'none' }"
           />
         </div>
 
@@ -441,6 +570,7 @@ onMounted(() => {
 </template>
 
 <style>
+/* Existing toast animation */
 .fade-in-out {
     animation: fadeInOut 3s ease-in-out forwards;
 }
@@ -450,6 +580,8 @@ onMounted(() => {
     85% { opacity: 1; transform: translateY(0);}
     100% { opacity: 0; transform: translateY(20px);}
 }
+
+/* Table layout helpers */
 .fixed-table {
   table-layout: fixed;
   width: 100%;
@@ -460,10 +592,76 @@ onMounted(() => {
 .fixed-table th:nth-child(4), .fixed-table td:nth-child(4) { width: 15%; }
 .fixed-table td { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fixed-table td:nth-child(3) { white-space: normal; word-wrap: break-word; }
+
+/* Native select icon */
 select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.5rem center;
   background-size: 1em;
+}
+
+/* Error group wrapper: we animate its height via JS hooks */
+.error-group-wrapper {
+  will-change: height;
+}
+
+/* Error rail: red dot grows into a line from center */
+.error-rail {
+  position: relative;
+  height: 3px;
+  width: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgba(0,0,0,0) 0%, #fca5a5 15%, #ef4444 50%, #fca5a5 85%, rgba(0,0,0,0) 100%);
+  transform-origin: center;
+  transform: scaleX(0);
+  animation: rail-grow 350ms ease-out forwards;
+}
+.rail-dot {
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  background-color: #ef4444;
+  border-radius: 9999px;
+  transform: translateX(-50%);
+  animation: rail-dot-fade 350ms ease-out forwards;
+}
+@keyframes rail-grow {
+  0%   { transform: scaleX(0); opacity: 0.6; }
+  60%  { transform: scaleX(0.9); opacity: 1; }
+  100% { transform: scaleX(1); opacity: 1; }
+}
+@keyframes rail-dot-fade {
+  0%   { opacity: 1; }
+  60%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Alert panel fade/slide; visibility via 'shown' class */
+.alert-panel {
+  border-left-width: 4px;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 220ms ease, transform 220ms ease;
+  will-change: opacity, transform;
+}
+.alert-panel.shown {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/*
+ On dismiss, fade both rail and alert simultaneously as wrapper collapses,
+ otherwise one will be blocking the table components below,
+ and force said components to "jump", to fill the void
+   */
+.error-group-wrapper.leaving .alert-panel,
+.error-group-wrapper.leaving .error-rail,
+.error-group-wrapper.leaving .rail-dot {
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 220ms ease, transform 220ms ease;
 }
 </style>

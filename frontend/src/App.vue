@@ -336,7 +336,7 @@ onMounted(() => {
   <header class="bg-white dark:bg-slate-800/50 backdrop-blur-sm shadow-sm sticky top-0 z-10">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center py-4">
-        <h1 class="text-2xl font-bold text-slate-900 dark:text-white" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">Digg dashboard</h1>
+        <h1 class="text-4xl font-semibold text-slate-900 mt-2 mb-2 dark:text-white" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">Digg dashboard</h1>
       </div>
     </div>
   </header>

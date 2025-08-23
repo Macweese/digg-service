@@ -1,12 +1,17 @@
 <script setup>
-import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue';
+import { ref, reactive, onMounted, watch, nextTick } from 'vue';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue';
 import { ChevronDownIcon } from '@heroicons/vue/20/solid';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
-// --- STATE MANAGEMENT (Reactivity) ---
-const users = ref([]);
+// --- STATE ---
+const usersPage = ref({
+  content: [],
+  totalPages: 1,
+  totalElements: 0,
+  number: 0, // current page index
+});
 const isLoading = ref(true);
 const isModalOpen = ref(false);
 const firstInput = ref(null);
@@ -19,7 +24,6 @@ const toastMessage = ref('');
 const errorMessage = ref('');
 const itemsPerPage = ref(10);
 
-// The form is a reactive object
 const userForm = reactive({
   id: null,
   name: '',
@@ -32,28 +36,38 @@ const userForm = reactive({
 const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50];
 const BASE_API_URL = 'http://localhost:8080/digg/user';
 
-// --- API METHODS ---
-// Fetch ALL users from the backend
+// --- METHODS ---
 async function loadUsers() {
   isLoading.value = true;
   errorMessage.value = '';
+  let url;
+  let query = searchTerm.value.trim();
+
+  if (query) {
+    url = `${BASE_API_URL}/${currentPage.value}/${itemsPerPage.value}/search/${encodeURIComponent(query)}`;
+  } else {
+    url = `${BASE_API_URL}/${currentPage.value}/${itemsPerPage.value}`;
+  }
+
   try {
-    const response = await fetch(BASE_API_URL);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const data = await response.json();
-    users.value = data;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const page = await response.json();
+    usersPage.value = page;
+    usersPage.value.content = usersPage.value.content || [];
   } catch (error) {
-    console.error("Failed to load users:", error);
-    errorMessage.value = "Could not connect to the server or failed to load users.";
-    users.value = [];
+    errorMessage.value = "Could not load users: " + error.message;
+    usersPage.value = {
+      content: [],
+      totalPages: 1,
+      totalElements: 0,
+      number: 0,
+    };
   } finally {
     isLoading.value = false;
   }
 }
 
-// Save new or existing user
 async function handleSaveUser() {
   const isEditing = !!editingUser.value;
   const url = isEditing ? `${BASE_API_URL}/${userForm.id}` : BASE_API_URL;
@@ -61,114 +75,55 @@ async function handleSaveUser() {
 
   try {
     const response = await fetch(url, {
-      method: method,
+      method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(userForm),
     });
-    if (!response.ok) {
-      throw new Error('Failed to save the user.');
-    }
-    await loadUsers();
+    if (!response.ok) throw new Error('Failed to save the user.');
     showToast(`User ${isEditing ? 'updated' : 'added'}`);
     handleCloseModal();
+    await loadUsers();
   } catch (error) {
-    console.error("Failed to save user:", error);
-    errorMessage.value = "Failed to save user. Please try again.";
+    errorMessage.value = "Failed to save user. " + error.message;
   }
 }
 
-// Delete user after confirmation
 async function confirmDelete() {
   try {
     const response = await fetch(`${BASE_API_URL}/${userToDelete.value}`, {
       method: 'DELETE',
     });
-    if (!response.ok) {
-      throw new Error('Failed to delete the user.');
-    }
-
-    if (paginatedUsers.value.length === 1 && currentPage.value > 0) {
-      currentPage.value--;
-    }
-
-    await loadUsers();
+    if (!response.ok) throw new Error('Failed to delete the user.');
     showToast('User deleted');
+    await loadUsers();
   } catch (error) {
-    console.error("Failed to delete user:", error);
-    errorMessage.value = "Failed to delete user. Please try again.";
+    errorMessage.value = "Failed to delete user. " + error.message;
   } finally {
     isDeleteConfirmOpen.value = false;
     userToDelete.value = null;
   }
 }
 
-// --- COMPUTED PROPERTIES (Client-Side Logic) ---
-
-// Filter users based on search term
-const filteredUsers = computed(() => {
-  if (!searchTerm.value) {
-    return users.value;
-  }
-  const lowerCaseSearch = searchTerm.value.toLowerCase();
-  return users.value.filter(user =>
-    Object.values(user).some(val =>
-      String(val).toLowerCase().includes(lowerCaseSearch)
-    )
-  );
-});
-
-// Calculate total elements and pages based on the *filtered* list
-const totalElements = computed(() => filteredUsers.value.length);
-const totalPages = computed(() => Math.ceil(totalElements.value / itemsPerPage.value));
-
-// Paginate the filtered list for display
-const paginatedUsers = computed(() => {
-  if (currentPage.value >= totalPages.value) {
-    currentPage.value = Math.max(0, totalPages.value - 1);
-  }
-
-  const start = currentPage.value * itemsPerPage.value;
-  const end = start + itemsPerPage.value;
-  return filteredUsers.value.slice(start, end);
-});
-
-// Calculate dynamic height based on items per page
-const tableContainerHeight = computed(() => {
-  const baseHeight = 600;
-  const additionalHeightPerItem = 40;
-  return `${baseHeight + (itemsPerPage.value - 10) * additionalHeightPerItem}px`;
-});
-
-// --- WATCHERS ---
+// --- PAGINATION/SEARCH LOGIC ---
 watch(searchTerm, () => {
-  // When a new search is performed, always go back to the first page
   currentPage.value = 0;
+  loadUsers();
 });
-
-// Reset to first page when items per page changes
 watch(itemsPerPage, () => {
   currentPage.value = 0;
+  loadUsers();
+});
+watch(currentPage, () => {
+  loadUsers();
 });
 
 watch(isModalOpen, (newValue) => {
-  if (newValue) {
-    document.addEventListener('keydown', handleKeydown);
-  } else {
-    document.removeEventListener('keydown', handleKeydown);
-  }
+  if (newValue) document.addEventListener('keydown', handleKeydown);
+  else document.removeEventListener('keydown', handleKeydown);
 });
-
 watch(isDeleteConfirmOpen, (newValue) => {
-  if (newValue) {
-    document.addEventListener('keydown', handleKeydown);
-  } else {
-    document.removeEventListener('keydown', handleKeydown);
-  }
-});
-
-// Reset to first page when items per page changes
-watch(itemsPerPage, () => {
-  currentPage.value = 0;
+  if (newValue) document.addEventListener('keydown', handleKeydown);
+  else document.removeEventListener('keydown', handleKeydown);
 });
 
 function handleKeydown(event) {
@@ -176,8 +131,6 @@ function handleKeydown(event) {
     handleCloseModal();
   }
 }
-
-// --- HELPER METHODS ---
 
 function showToast(message) {
   toastMessage.value = message;
@@ -213,7 +166,7 @@ function handleEditUser(user) {
 function handleCloseModal() {
   isModalOpen.value = false;
   editingUser.value = null;
-  isDeleteConfirmOpen.value = null;
+  isDeleteConfirmOpen.value = false;
 }
 
 function handleDeleteUser(userId) {
@@ -222,21 +175,18 @@ function handleDeleteUser(userId) {
 }
 
 function nextPage() {
-  if (currentPage.value < totalPages.value - 1) {
+  if (currentPage.value < (usersPage.value.totalPages - 1)) {
     currentPage.value++;
   }
 }
-
 function prevPage() {
   if (currentPage.value > 0) {
     currentPage.value--;
   }
 }
 
-
-// --- WEBSOCKET CONNECTION ---
+// --- WEBSOCKET ---
 let stompClient = null;
-
 function connectWebSocket() {
   const socket = new SockJS('http://localhost:8080/ws');
   stompClient = new Client({
@@ -244,7 +194,9 @@ function connectWebSocket() {
     reconnectDelay: 60000,
     onConnect: () => {
       stompClient.subscribe('/topic/users', (message) => {
-        users.value = JSON.parse(message.body);
+        const page = JSON.parse(message.body);
+        usersPage.value = page;
+        usersPage.value.content = usersPage.value.content || [];
         isLoading.value = false;
       });
     },
@@ -255,7 +207,7 @@ function connectWebSocket() {
   stompClient.activate();
 }
 
-// --- LIFECYCLE HOOK ---
+// --- LIFECYCLE ---
 onMounted(() => {
   loadUsers();
   connectWebSocket();
@@ -277,30 +229,36 @@ onMounted(() => {
         <strong class="font-bold">Error: </strong>
         <span class="block sm:inline">{{ errorMessage }}</span>
         <span class="absolute top-0 bottom-0 right-0 px-4 py-3" @click="errorMessage = ''">
-          <svg class="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>
+          <svg class="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+            <title>Close</title>
+            <path d="M6 6L14 14M14 6L6 14"></path>
+          </svg>
         </span>
       </div>
 
       <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
         <div class="relative w-full sm:max-w-xs">
           <div class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <circle cx="11" cy="11" r="8" stroke-width="2"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65" stroke-width="2"></line>
+            </svg>
           </div>
           <input
-              v-model="searchTerm"
-              type="text"
-              placeholder="Search"
-              class="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-slate-100 dark:bg-slate-700/50 focus:outline-none" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }"
+            v-model="searchTerm"
+            type="text"
+            placeholder="Search"
+            class="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-slate-100 dark:bg-slate-700/50 focus:outline-none"
+            :style="{ userSelect: 'none', WebkitUserSelect: 'none' }"
           />
         </div>
 
-        <div class="flex flex-col sm:flex-row gap-20 w-full sm:w-auto">
+        <div class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
           <Menu as="div" class="relative inline-block text-left">
-            <MenuButton class="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-slate-700 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-700/90" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
+            <MenuButton class="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-slate-700 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-700/90" :style="{ userSelect: 'none' }">
               {{ itemsPerPage }} per page
               <ChevronDownIcon class="-mr-1 h-5 w-5 text-indigo-200" aria-hidden="true" />
             </MenuButton>
-
             <transition enter-active-class="transition ease-out duration-100" enter-from-class="transform opacity-0 scale-95" enter-to-class="transform opacity-100 scale-100" leave-active-class="transition ease-in duration-75" leave-from-class="transform opacity-100 scale-100" leave-to-class="transform opacity-0 scale-95">
               <MenuItems class="absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-slate-800 dark:ring-white/10">
                 <div class="py-1">
@@ -317,19 +275,22 @@ onMounted(() => {
             </transition>
           </Menu>
 
-          <button @click="handleAddUser" class="flex items-center justify-center px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-900 transition-colors" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mr-2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" x2="19" y1="8" y2="14"></line><line x1="22" x2="16" y1="11" y2="11"></line></svg>
-            Add User
+          <button @click="handleAddUser" class="flex items-center justify-center px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <line x1="12" y1="5" x2="12" y2="19" stroke-width="2"></line>
+              <line x1="5" y1="12" x2="19" y2="12" stroke-width="2"></line>
+            </svg>
+            <span class="ml-2">Add User</span>
           </button>
         </div>
       </div>
 
-      <div class="overflow-x-auto" :style="{ minHeight: tableContainerHeight }">
+      <div class="overflow-x-auto" :style="{ minHeight: '600px' }">
         <div v-if="isLoading" class="text-center py-12">
           <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
           <p class="mt-4 text-slate-500 dark:text-slate-400">Loading users...</p>
         </div>
-        <table v-else-if="paginatedUsers.length > 0" class="w-full text-sm text-left text-slate-500 dark:text-slate-400 fixed-table">
+        <table v-else-if="usersPage.content.length > 0" class="w-full text-sm text-left text-slate-500 dark:text-slate-400 fixed-table">
           <thead class="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-300" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
           <tr>
             <th scope="col" class="px-6 py-3">Name</th>
@@ -339,7 +300,7 @@ onMounted(() => {
           </tr>
           </thead>
           <tbody>
-          <tr v-for="user in paginatedUsers" :key="user.id" class="bg-white dark:bg-slate-800 border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+          <tr v-for="user in usersPage.content" :key="user.id" class="bg-white dark:bg-slate-800 border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
             <td class="px-6 py-4 font-medium text-slate-900 dark:text-white whitespace-nowrap">{{ user.name }}</td>
             <td class="px-6 py-4 hidden md:table-cell">
               <div>{{ user.email }}</div>
@@ -349,10 +310,16 @@ onMounted(() => {
             <td class="px-6 py-4">
               <div class="flex justify-end items-center gap-2">
                 <button @click="handleEditUser(user)" class="p-2 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <rect x="4" y="4" width="16" height="16" rx="2" stroke-width="2" />
+                    <path d="M8 16L16 8" stroke-width="2" />
+                  </svg>
                 </button>
                 <button @click="handleDeleteUser(user.id)" class="p-2 text-slate-500 hover:text-red-600 dark:hover:text-red-400 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <rect x="4" y="4" width="16" height="16" rx="2" stroke-width="2" />
+                    <line x1="8" y1="8" x2="16" y2="16" stroke-width="2" />
+                  </svg>
                 </button>
               </div>
             </td>
@@ -369,20 +336,20 @@ onMounted(() => {
         </div>
       </div>
 
-      <nav v-if="totalPages > 1" class="flex items-center justify-between pt-4" aria-label="Table navigation">
+      <nav v-if="usersPage.totalPages > 1" class="flex items-center justify-between pt-4" aria-label="Table navigation">
         <span class="text-sm font-normal text-slate-500 dark:text-slate-400" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
             Page <span class="font-semibold text-slate-900 dark:text-white">{{ currentPage + 1 }}</span>
-            of <span class="font-semibold text-slate-900 dark:text-white">{{ totalPages }}</span>
-            (<span class="font-semibold text-slate-900 dark:text-white">{{ totalElements }}</span> entries)
+            of <span class="font-semibold text-slate-900 dark:text-white">{{ usersPage.totalPages }}</span>
+            (<span class="font-semibold text-slate-900 dark:text-white">{{ usersPage.totalElements }}</span> entries)
         </span>
         <ul class="inline-flex items-center -space-x-px">
           <li>
-            <button @click="prevPage()" :disabled="currentPage === 0" class="px-3 py-2 ml-0 leading-tight text-slate-500 bg-white border border-slate-300 rounded-l-lg hover:bg-slate-100 hover:text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
+            <button @click="prevPage()" :disabled="currentPage === 0" class="px-3 py-2 ml-0 leading-tight text-slate-500 bg-white border border-slate-300 rounded-l-lg hover:bg-slate-100 hover:text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700">
               Previous
             </button>
           </li>
           <li>
-            <button @click="nextPage()" :disabled="currentPage >= totalPages - 1" class="px-3 py-2 leading-tight text-slate-500 bg-white border border-slate-300 rounded-r-lg hover:bg-slate-100 hover:text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
+            <button @click="nextPage()" :disabled="currentPage >= usersPage.totalPages - 1" class="px-3 py-2 leading-tight text-slate-500 bg-white border border-slate-300 rounded-r-lg hover:bg-slate-100 hover:text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700">
               Next
             </button>
           </li>
@@ -401,27 +368,27 @@ onMounted(() => {
           <div class="space-y-4">
             <div>
               <label for="name" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">Name</label>
-              <input ref="firstInput" type="text" id="name" v-model="userForm.name" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white" />
+              <input ref="firstInput" type="text" id="name" v-model="userForm.name" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md" />
             </div>
             <div>
               <label for="email" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">Email</label>
-              <input type="email" id="email" v-model="userForm.email" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white" />
+              <input type="email" id="email" v-model="userForm.email" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md" />
             </div>
             <div>
               <label for="phone" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">Telephone</label>
-              <input type="tel" id="phone" v-model="userForm.telephone" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white" />
+              <input type="tel" id="phone" v-model="userForm.telephone" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md" />
             </div>
             <div>
               <label for="address" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">Address</label>
-              <input type="text" id="address" v-model="userForm.address" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white" />
+              <input type="text" id="address" v-model="userForm.address" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md" />
             </div>
           </div>
         </div>
         <div class="bg-slate-50 dark:bg-slate-700 px-6 py-4 flex justify-end gap-3 rounded-b-lg">
-          <button type="button" @click="handleCloseModal" class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-600 border border-slate-300 dark:border-slate-500 rounded-md hover:bg-slate-50 dark:hover:bg-slate-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
+          <button type="button" @click="handleCloseModal" class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-600 border border-slate-300 dark:border-slate-500 rounded-md">
             Cancel
           </button>
-          <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
+          <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
             Save User
           </button>
         </div>
@@ -432,94 +399,54 @@ onMounted(() => {
   <div v-if="isDeleteConfirmOpen" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4" @click="isDeleteConfirmOpen = false">
     <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-sm" @click.stop>
       <div class="p-6 text-center" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-12 w-12 text-red-500 mx-auto"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <rect x="4" y="4" width="16" height="16" rx="2" stroke-width="2" />
+          <line x1="8" y1="8" x2="16" y2="16" stroke-width="2" />
+        </svg>
         <h3 class="mt-5 mb-2 text-lg font-semibold text-slate-900 dark:text-white">Delete User</h3>
         <p class="text-sm text-slate-500 dark:text-slate-400">Are you sure you want to delete this user? This action cannot be undone.</p>
       </div>
       <div class="bg-slate-50 dark:bg-slate-700 px-6 py-4 flex justify-center gap-3 rounded-b-lg">
-        <button @click="isDeleteConfirmOpen = false" class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-600 border border-slate-300 dark:border-slate-500 rounded-md hover:bg-slate-50 dark:hover:bg-slate-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
+        <button @click="isDeleteConfirmOpen = false" class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-600 border border-slate-300 dark:border-slate-500 rounded-md">
           Cancel
         </button>
-        <button @click="confirmDelete" class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
+        <button @click="confirmDelete" class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
           Confirm Delete
         </button>
       </div>
     </div>
   </div>
 
-  <div v-if="toastMessage" class="fixed bottom-5 text-justify md:align-middle font-350 right-5 bg-green-700/40 text-white py-2 px-4 rounded-lg shadow-lg flex items-center fade-in-out" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-    {{ toastMessage }}
+  <div v-if="toastMessage" class="fixed bottom-5 right-5 bg-green-700/40 text-white py-2 px-4 rounded-lg shadow-lg flex items-center fade-in-out" :style="{ userSelect: 'none' }">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <polyline points="22 4 12 14 9 11"></polyline>
+    </svg>
+    <span class="ml-2">{{ toastMessage }}</span>
   </div>
 </template>
 
 <style>
-/* Toast animation */
 .fade-in-out {
     animation: fadeInOut 3s ease-in-out forwards;
 }
-
 @keyframes fadeInOut {
-    0% {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    15% {
-        opacity: 1;
-        transform: translateY(0);
-    }
-    85% {
-        opacity: 1;
-        transform: translateY(0);
-    }
-    100% {
-        opacity: 0;
-        transform: translateY(20px);
-    }
+    0% { opacity: 0; transform: translateY(20px);}
+    15% { opacity: 1; transform: translateY(0);}
+    85% { opacity: 1; transform: translateY(0);}
+    100% { opacity: 0; transform: translateY(20px);}
 }
-
-/* Fixed table column widths */
 .fixed-table {
   table-layout: fixed;
   width: 100%;
 }
-
-.fixed-table th:nth-child(1),
-.fixed-table td:nth-child(1) {
-  width: 20%; /* Name column */
-}
-
-.fixed-table th:nth-child(2),
-.fixed-table td:nth-child(2) {
-  width: 30%; /* Contact column */
-}
-
-.fixed-table th:nth-child(3),
-.fixed-table td:nth-child(3) {
-  width: 35%; /* Address column */
-}
-
-.fixed-table th:nth-child(4),
-.fixed-table td:nth-child(4) {
-  width: 15%; /* Actions column */
-}
-
-/* Ensure text doesn't overflow */
-.fixed-table td {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Allow wrapping for specific columns if needed */
-.fixed-table td:nth-child(3) { /* Address column */
-  white-space: normal;
-  word-wrap: break-word;
-}
-
-/* Custom select styling */
+.fixed-table th:nth-child(1), .fixed-table td:nth-child(1) { width: 20%; }
+.fixed-table th:nth-child(2), .fixed-table td:nth-child(2) { width: 30%; }
+.fixed-table th:nth-child(3), .fixed-table td:nth-child(3) { width: 35%; }
+.fixed-table th:nth-child(4), .fixed-table td:nth-child(4) { width: 15%; }
+.fixed-table td { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fixed-table td:nth-child(3) { white-space: normal; word-wrap: break-word; }
 select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.5rem center;
   background-size: 1em;

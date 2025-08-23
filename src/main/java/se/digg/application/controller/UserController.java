@@ -48,35 +48,38 @@ public class UserController
 	}
 
 	/**
-	 * @param query
 	 * @param page
 	 * @param size
 	 * @return
 	 */
-	@GetMapping("/search/{query}/{page}/{size}")
-	@Operation(summary = "Retrieve paged search", description = "Search users with a pagination")
+	@GetMapping("/{page}/{size}")
+	@Operation(summary = "Retrieve paged users", description = "Get all users with pagination")
 	@ApiResponse(responseCode = "200", description = "Successfully retrieved users")
 	public ResponseEntity<Page<User>> getUsers(
-		@PathVariable String query,
 		@PathVariable int page,
 		@PathVariable int size)
 	{
-		log.info("REST call: GET /digg/user/search?q={}&page={}&size={}", query, page, size);
-
+		log.info("REST call: GET /digg/user/{}/{}", page, size);
 		Pageable pageable = PageRequest.of(page, size);
-		Page<User> userPage;
-
-		if (query != null && !query.isEmpty())
-		{
-			userPage = userServiceImpl.queryUsers(query, pageable);
-		}
-		else
-		{
-			userPage = userServiceImpl.getUsers(pageable);
-		}
+		Page<User> userPage = userServiceImpl.getUsers(pageable);
 
 		messagingTemplate.convertAndSend("/topic/users", userPage);
+		return ResponseEntity.ok(userPage);
+	}
 
+	@GetMapping("/{page}/{size}/search/{query}")
+	@Operation(summary = "Retrieve paged search", description = "Search users with a pagination")
+	@ApiResponse(responseCode = "200", description = "Successfully retrieved users")
+	public ResponseEntity<Page<User>> queryUsers(
+		@PathVariable int page,
+		@PathVariable int size,
+		@PathVariable String query)
+	{
+		log.info("REST call: POST /digg/user/{}/{}/search/{}", page, size, query);
+		Pageable pageable = PageRequest.of(page, size);
+		Page<User> userPage = userServiceImpl.queryUsers(query, pageable);
+
+		messagingTemplate.convertAndSend("/topic/users", userPage);
 		return ResponseEntity.ok(userPage);
 	}
 

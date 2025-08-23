@@ -247,17 +247,25 @@ onMounted(() => {
 
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-sm">
-      <div v-if="errorMessage" class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg relative" role="alert">
-        <strong class="font-bold">Error: </strong>
-        <span class="block sm:inline">{{ errorMessage }}</span>
-        <span class="absolute top-0 bottom-0 right-0 px-4 py-3" @click="errorMessage = ''">
-          <svg class="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-            <title>Close</title>
-            <path d="M6 6L14 14M14 6L6 14"></path>
-          </svg>
-        </span>
-      </div>
-
+        <div v-if="errorMessage" class="border-s-4 m-1 mb-5 border-red-400/50 bg-red-800/30 p-4 rounded-sm">
+            <div class="flex justify-between items-start">
+                <div class="flex items-center gap-2 text-red-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <strong class="font-normal">Something went wrong</strong>
+                </div>
+                <div class="flex justify-self-end text-red-400 cursor-pointer hover:text-red-300 transition-colors" @click="errorMessage = ''">
+                    <svg class="fill-current h-6 w-6 text-red-400" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <title>Close</title>
+                        <path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/>
+                    </svg>
+                </div>
+            </div>
+            <p class="mt-2 text-sm text-red-300">
+                <strong class="font-medium">Error&emsp;</strong> {{ errorMessage }}
+            </p>
+        </div>
       <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
         <div class="relative w-full sm:max-w-xs">
           <div class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400">

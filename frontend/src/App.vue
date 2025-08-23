@@ -52,15 +52,21 @@ function onGlobalKeydown(e: KeyboardEvent) {
   }
 }
 
+// ESC on search → blur (deselect)
+function onSearchEscape() {
+  searchInputRef.value?.blur();
+}
+
 async function handleSaveUser(user: User) {
   try {
     await saveUser(user);
-    toastMessage.value = `User ${user.id ? 'updated' : 'added'}`;
-    closeModal();
-    await loadUsers();
   } catch (e: any) {
     errorMessage.value = e?.message ? 'Failed to save user. ' + e.message : 'Failed to save user.';
+    return;
   }
+  toastMessage.value = `User ${user.id ? 'updated' : 'added'}`;
+  closeModal();
+  await loadUsers();
 }
 
 async function confirmDelete() {
@@ -103,36 +109,53 @@ onBeforeUnmount(() => {
       />
 
       <!-- Controls -->
-      <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
-        <!-- Search with Ctrl + K hint -->
-        <div class="relative w-full sm:max-w-xs">
-          <div class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400/50">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line></svg>
-          </div>
-          <input
-            ref="searchInputRef"
-            v-model="searchTerm"
-            type="text"
-            placeholder="Search"
-            class="w-full pl-10 pr-20 py-2 font-medium text-slate-200 text-xs border tracking-widest border-slate-300 dark:border-slate-600 rounded-md bg-slate-100 dark:bg-slate-700/50 focus:outline-none focus-visible:bg-slate-900/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-500 focus-visible:ring-offset-0 transition delay-50 duration-150 ease-in-out"
-            :style="{ userSelect: 'none', WebkitUserSelect: 'none' }"
-          />
-          <!-- Monospace keybind hint on the right -->
-          <span
-            class="pointer-events-none absolute right-7 top-1/2 -translate-y-1/2 text-xs text-slate-400/70 font-bold"
-            :style="{ fontFamily: 'Courier New, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }"
-            aria-hidden="true"
-          >
-            Ctrl + k
-          </span>
-        </div>
+<div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+  <!-- Search with Ctrl + K hint -->
+  <div class="relative w-full sm:max-w-xs group">
+    <div class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 transition-opacity duration-150 group-focus-within:opacity-40">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line></svg>
+    </div>
+    <input
+      ref="searchInputRef"
+      v-model="searchTerm"
+      type="text"
+      placeholder="Search"
+      @keydown.escape.prevent="onSearchEscape"
+      class="w-full pl-10 pr-20 py-2 rounded-md
+             bg-slate-100 dark:bg-slate-700/50
+             border border-slate-300 dark:border-slate-600
+             text-slate-900 dark:text-slate-100
+             caret-indigo-600 dark:caret-sky-300
+             selection:bg-indigo-200 selection:text-slate-900
+             dark:selection:bg-sky-500/40 dark:selection:text-white
+             focus:outline-none focus-visible:outline-none
+             focus-visible:ring-1 focus-visible:ring-gray-500 focus-visible:ring-offset-0
+             focus-visible:bg-slate-900/30 "
+      :style="{ fontFamily: 'ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji', userSelect: 'none', WebkitUserSelect: 'none' }"
+    />
+    <!-- Monospace keybind hint on the right (auto-hide when focused anywhere inside the group) -->
+    <span
+      class="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 h-3 -translate-y-1/2 text-xs text-slate-400
+             transition-opacity duration-150 opacity-100 group-focus-within:opacity-40 font-weight-medium"
+      :style="{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace', userSelect: 'none', WebkitUserSelect: 'none' }"
+      aria-hidden="true"
+    >
+      Ctrl + K
+    </span>
+  </div>
 
         <div class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-          <!-- Items per page select (slightly darker + slim border) -->
+          <!-- Items per page select -->
           <div class="relative">
             <select
               v-model.number="itemsPerPage"
-              class="px-3 py-2 text-sm rounded-md bg-slate-200 dark:bg-slate-700/70 border border-slate-400 dark:border-slate-600 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-400 dark:focus:ring-slate-500"
+              class="px-3 py-2 pr-10 text-sm rounded-md w-full
+                     bg-blue-800/80 dark:bg-slate-700
+                     border border-slate-400/40 dark:border-slate-600/40
+                     text-slate-800 dark:text-slate-200
+                     focus:outline-none focus:ring-1 focus:ring-slate-400 dark:focus:ring-slate-500
+                     transition delay-50 duration-150 ease-in-out
+                     font-medium"
               :style="{ userSelect: 'none', WebkitUserSelect: 'none' }"
             >
               <option :value="10">10 per page</option>
@@ -215,7 +238,7 @@ select {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.5rem center;
   background-size: 1em;
@@ -223,12 +246,12 @@ select {
 
 /* Darker dropdown menu items (browser support varies) */
 select option {
-  background-color: #e2e8f0; /* slate-300 */
-  color: #0f172a;            /* slate-900 */
+  background-color: #334155; /* slate-800 */
+  color: #cbd5e1;            /* slate-900 */
 }
 select option:checked {
-  background-color: #c7d2fe; /* indigo-200 */
-  color: #111827;            /* gray-900 */
+  background-color: #1e293bb6; /* indigo-200 */
+  color: #78859edc;            /* gray-900 */
 }
 
 /* Dark mode options */

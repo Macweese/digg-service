@@ -3,27 +3,41 @@ package se.digg.application.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import org.mockito.Captor;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import se.digg.application.events.UserEvent;
 import se.digg.application.model.User;
 import se.digg.application.service.UserServiceImpl;
 
@@ -38,6 +52,25 @@ public class UserControllerTest
 
 	@Autowired
 	private ObjectMapper objectMapper;
+
+	@MockBean
+	private SimpMessagingTemplate messagingTemplate;
+
+	private User sampleUser;
+
+	@Captor
+	private ArgumentCaptor<Object> payloadCaptor;
+
+	@BeforeEach
+	void setUp()
+	{
+		sampleUser = new User();
+		sampleUser.setId(1L);
+		sampleUser.setName("Alice");
+		sampleUser.setEmail("alice@example.com");
+		sampleUser.setTelephone("123456");
+		sampleUser.setAddress("Bellmans Gränd 17, 11717 Stockholm");
+	}
 
 	@Test
 	public void testGetAllUsers() throws Exception
@@ -182,5 +215,125 @@ public class UserControllerTest
 			.andExpect(status().isBadRequest());
 
 		verify(userServiceImpl, never()).createUser(any(User.class));
+	}
+
+	@Test
+	void getUsers_paged_ok() throws Exception
+	{
+		when(userServiceImpl.getUsers(PageRequest.of(0, 10)))
+			.thenReturn(new PageImpl<>(List.of(sampleUser), PageRequest.of(0, 10), 1));
+
+		mockMvc.perform(MockMvcRequestBuilders.get("/digg/user/0/10"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content", is(notNullValue())));
+	}
+
+	@Test
+	void queryUsers_paged_ok() throws Exception
+	{
+		when(userServiceImpl.queryUsers(eq("alice"), any()))
+			.thenReturn(new PageImpl<>(List.of(sampleUser)));
+
+		mockMvc.perform(MockMvcRequestBuilders.get("/digg/user/0/10/search/alice"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content", is(notNullValue())));
+	}
+
+	@Test
+	void getUserById_ok_whenExists() throws Exception
+	{
+		when(userServiceImpl.getUserById(1L)).thenReturn(Optional.of(sampleUser));
+
+		mockMvc.perform(MockMvcRequestBuilders.get("/digg/user/1"))
+			.andExpect(status().isOk());
+	}
+
+	@Test
+	void createUser_emitsEvent_andReturns201() throws Exception
+	{
+		when(userServiceImpl.createUser(any(User.class))).thenReturn(sampleUser);
+
+		mockMvc.perform(MockMvcRequestBuilders.post("/digg/user/add")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(sampleUser)))
+			.andExpect(status().isCreated());
+
+		verify(messagingTemplate).convertAndSend(eq("/topic/users"), payloadCaptor.capture());
+		assertEventPayload(payloadCaptor.getValue(), UserEvent.ADD.name());
+	}
+
+	@Test
+	void updateUser_emitsEvent_andReturns200() throws Exception
+	{
+		when(userServiceImpl.updateUser(eq(1L), any(User.class)))
+			.thenReturn(Optional.of(sampleUser));
+
+		mockMvc.perform(MockMvcRequestBuilders.put("/digg/user/edit/1")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(sampleUser)))
+			.andExpect(status().isOk());
+
+		verify(messagingTemplate).convertAndSend(eq("/topic/users"), payloadCaptor.capture());
+		assertEventPayload(payloadCaptor.getValue(), UserEvent.EDIT.name());
+	}
+
+	@Test
+	void deleteUser_emitsEvent_andReturns2xx() throws Exception
+	{
+		doNothing().when(userServiceImpl).deleteUser(1L);
+
+		mockMvc.perform(MockMvcRequestBuilders.delete("/digg/user/1"))
+			.andExpect(status().is2xxSuccessful());
+
+		verify(messagingTemplate).convertAndSend(eq("/topic/users"), payloadCaptor.capture());
+		assertEventPayload(payloadCaptor.getValue(), UserEvent.DELETE.name());
+	}
+
+	@Test
+	void cors_preflight_allowsFrontendOrigin() throws Exception
+	{
+		mockMvc.perform(MockMvcRequestBuilders.options("/digg/user/1")
+				.header("Origin", "http://localhost:5173")
+				.header("Access-Control-Request-Method", "DELETE"))
+			.andExpect(status().isOk())
+			.andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"));
+	}
+
+	@SuppressWarnings("unchecked")
+	private void assertEventPayload(Object payload, String expectedEvent)
+	{
+		// Controller may send
+		// Map.of("event", "USER_*")
+		// Map.of("event", UserEventType.USER_*)
+		if (payload instanceof Map<?, ?> map)
+		{
+			Object eventVal = map.get("event");
+			if (eventVal == null)
+			{
+				throw new AssertionError("Missing 'event' key in payload map");
+			}
+			if (eventVal instanceof Enum<?> e)
+			{
+				if (!expectedEvent.equals(e.name()))
+				{
+					throw new AssertionError("Expected enum event " + expectedEvent + " but got " + e.name());
+				}
+			}
+			else if (eventVal instanceof String s)
+			{
+				if (!expectedEvent.equals(s))
+				{
+					throw new AssertionError("Expected string event " + expectedEvent + " but got " + s);
+				}
+			}
+			else
+			{
+				throw new AssertionError("Unsupported event value type: " + eventVal.getClass());
+			}
+		}
+		else
+		{
+			throw new AssertionError("Payload was not a Map. Got: " + (payload == null ? "null" : payload.getClass()));
+		}
 	}
 }

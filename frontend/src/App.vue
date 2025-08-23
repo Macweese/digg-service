@@ -19,7 +19,6 @@ const {
   searchTerm,
   itemsPerPage,
   currentPage,
-  isLoading,
   showLoading,
   errorMessage,
   toastMessage,

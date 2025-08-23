@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -42,8 +43,8 @@ public class CustomerControllerTest
 	{
 		// given
 		List<Customer> customers = Arrays.asList(
-			new Customer(1L, "Kajsa Anka", "Vägen 13, 67421 Staden", "kajsa@acme.org", "070-0701100"),
-			new Customer(2L, "Kalle Anka", "Vägen 31, 67422 Staden", "kalle@acme.org", "070-0702200")
+			new Customer("Kajsa Anka", "Vägen 13, 67421 Staden", "kajsa@acme.org", "070-0701100"),
+			new Customer("Kalle Anka", "Vägen 31, 67422 Staden", "kalle@acme.org", "070-0702200")
 		);
 
 		when(customerService.getAllCustomers()).thenReturn(customers);
@@ -71,7 +72,7 @@ public class CustomerControllerTest
 	{
 		// givem
 		Customer inputCustomer = new Customer("Ludde Luddson", "Hittepåvägen 13, 67421 Staden", "ludde@ludd.org", "070-0001100");
-		Customer savedCustomer = new Customer(1L, "Ludde Luddson", "Hittepåvägen 13, 67421 Staden", "ludde@ludd.org", "070-0001100");
+		Customer savedCustomer = new Customer(UUID.randomUUID(), "Ludde Luddson", "Hittepåvägen 13, 67421 Staden", "ludde@ludd.org", "070-0001100");
 
 		when(customerService.createCustomer(any(Customer.class))).thenReturn(savedCustomer);
 
@@ -81,7 +82,7 @@ public class CustomerControllerTest
 				.content(objectMapper.writeValueAsString(inputCustomer)))
 			.andExpect(status().isCreated())
 			.andExpect(content().contentType(MediaType.APPLICATION_JSON))
-			.andExpect(jsonPath("$.id").value(1))
+			.andExpect(jsonPath("$.id").value(inputCustomer.getId()))
 			.andExpect(jsonPath("$.name").value("Ludde Luddson"))
 			.andExpect(jsonPath("$.address").value("Hittepåvägen 13, 67421 Staden"))
 			.andExpect(jsonPath("$.email").value("ludde@ludd.org"))
@@ -94,12 +95,13 @@ public class CustomerControllerTest
 	public void testGetCustomerById() throws Exception
 	{
 		// given
-		Customer customer = new Customer(1L, "Kajsa Anka", "Vägen 13, 67421 Staden", "kajsa@acme.org", "070-0701100");
+		UUID id = UUID.randomUUID();
+		Customer customer = new Customer(id, "Kajsa Anka", "Vägen 13, 67421 Staden", "kajsa@acme.org", "070-0701100");
 
-		when(customerService.getCustomerById(1L)).thenReturn(Optional.of(customer));
+		when(customerService.getCustomerById(id)).thenReturn(Optional.of(customer));
 
 		// when + then
-		mockMvc.perform(get("/digg/user/1"))
+		mockMvc.perform(get("/digg/user/" + id))
 			.andExpect(status().isOk())
 			.andExpect(content().contentType(MediaType.APPLICATION_JSON))
 			.andExpect(jsonPath("$.name").value("Kajsa Anka"))
@@ -107,64 +109,67 @@ public class CustomerControllerTest
 			.andExpect(jsonPath("$.email").value("kajsa@acme.org"))
 			.andExpect(jsonPath("$.telephone").value("070-0701100"));
 
-		verify(customerService).getCustomerById(1L);
+		verify(customerService).getCustomerById(id);
 	}
 
 	@Test
 	public void testGetCustomerByIdNotFound() throws Exception
 	{
 		// given
-		when(customerService.getCustomerById(999L)).thenReturn(Optional.empty());
+		UUID id = UUID.randomUUID();
+		when(customerService.getCustomerById(id)).thenReturn(Optional.empty());
 
 		// when + then
-		mockMvc.perform(get("/digg/user/999"))
+		mockMvc.perform(get("/digg/user/" + id))
 			.andExpect(status().isNotFound());
 
-		verify(customerService).getCustomerById(999L);
+		verify(customerService).getCustomerById(id);
 	}
 
 	@Test
 	public void testUpdateCustomer() throws Exception
 	{
 		// given
-		Customer updatedCustomer = new Customer(1L, "Updated Name", "Updated Address", "updated@email.com", "070-0001100");
+		Customer updatedCustomer = new Customer(any(UUID.class), "Updated Name", "Updated Address", "updated@email.com", "070-0001100");
 
-		when(customerService.updateCustomer(anyLong(), any(Customer.class))).thenReturn(Optional.of(updatedCustomer));
+		when(customerService.updateCustomer(updatedCustomer.getId(), any(Customer.class))).thenReturn(Optional.of(updatedCustomer));
 
 		// when + then
-		mockMvc.perform(put("/digg/user/1")
+		mockMvc.perform(put("/digg/user/" + updatedCustomer.getId())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(updatedCustomer)))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.name").value("Updated Name"));
 
-		verify(customerService).updateCustomer(anyLong(), any(Customer.class));
+		verify(customerService).updateCustomer(updatedCustomer.getId(), any(Customer.class));
 	}
 
 	@Test
 	public void testDeleteCustomer() throws Exception
 	{
 		// given
-		when(customerService.deleteCustomer(1L)).thenReturn(true);
+		UUID id = UUID.randomUUID();
+		when(customerService.deleteCustomer(id)).thenReturn(true);
 
 		// when + then
-		mockMvc.perform(delete("/digg/user/1"))
+		mockMvc.perform(delete("/digg/user/" + id))
 			.andExpect(status().isNoContent());
 
-		verify(customerService).deleteCustomer(1L);
+		verify(customerService).deleteCustomer(id);
 	}
 
 	@Test
 	public void testDeleteCustomerNotFound() throws Exception
 	{
 		// given
-		when(customerService.deleteCustomer(999L)).thenReturn(false);
+		UUID id = UUID.randomUUID();
+		when(customerService.deleteCustomer(id)).thenReturn(false);
 
 		// when + then
-		mockMvc.perform(delete("/digg/user/999"))
+		mockMvc.perform(delete("/digg/user/" + id))
 			.andExpect(status().isNotFound());
 
-		verify(customerService).deleteCustomer(999L);
+		verify(customerService).deleteCustomer(id);
 	}
 
 	@Test

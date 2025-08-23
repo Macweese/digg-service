@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
@@ -16,8 +17,7 @@ import se.digg.application.model.Customer;
 @Slf4j
 public class CustomerService
 {
-	private final Map<Long, Customer> customers = new ConcurrentHashMap<>();
-	private final AtomicLong idGenerator = new AtomicLong(1);
+	private final Map<UUID, Customer> customers = new ConcurrentHashMap<>();
 
 	public CustomerService()
 	{
@@ -35,7 +35,7 @@ public class CustomerService
 	{
 		log.info("Fetching customers - page: {}, size: {}", page, size);
 
-		List<Customer> allCustomers = getAllCustomers();
+		List<Customer> allCustomers = new ArrayList<>(customers.values());
 		int start = page * size;
 		int end = Math.min(start + size, allCustomers.size());
 
@@ -49,23 +49,22 @@ public class CustomerService
 
 	public Customer createCustomer(Customer customer)
 	{
-		Long id = idGenerator.getAndIncrement();
-		customer.setId(id);
-		customers.put(id, customer);
-		log.info("Created new customer with ID: {}", id);
+		customer.setId(UUID.randomUUID());
+		customers.put(customer.getId(), customer);
+
+		log.info("Created new customer with ID: {}", customer.getId());
 		return customer;
 	}
 
-	public Optional<Customer> getCustomerById(Long id)
+	public Optional<Customer> getCustomerById(UUID id)
 	{
 		log.info("Fetching customer with ID: {}", id);
 		return Optional.ofNullable(customers.get(id));
 	}
 
-	public Optional<Customer> updateCustomer(Long id, Customer customerUpdate)
+	public Optional<Customer> updateCustomer(UUID id, Customer customerUpdate)
 	{
-		Customer existingCustomer = customers.get(id);
-		if (existingCustomer != null)
+		if (customers.get(id) != null)
 		{
 			customerUpdate.setId(id);
 			customers.put(id, customerUpdate);
@@ -76,10 +75,9 @@ public class CustomerService
 		return Optional.empty();
 	}
 
-	public boolean deleteCustomer(Long id)
+	public boolean deleteCustomer(UUID id)
 	{
-		Customer removed = customers.remove(id);
-		if (removed != null)
+		if (customers.remove(id) != null)
 		{
 			log.info("Deleted customer with ID: {}", id);
 			return true;

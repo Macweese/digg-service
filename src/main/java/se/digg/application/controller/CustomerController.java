@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -106,7 +107,7 @@ public class CustomerController
 		@ApiResponse(responseCode = "404", description = "Customer not found")
 	})
 	@GetMapping("/{id}")
-	public ResponseEntity<Customer> getCustomerById(@Parameter(description = "Customer ID") @PathVariable Long id)
+	public ResponseEntity<Customer> getCustomerById(@Parameter(description = "Customer ID") @PathVariable UUID id)
 	{
 		log.info("REST call: GET /digg/user/{}", id);
 		Optional<Customer> customer = customerService.getCustomerById(id);
@@ -122,7 +123,7 @@ public class CustomerController
 	})
 	@PutMapping("/{id}")
 	public ResponseEntity<Customer> updateCustomer(
-		@Parameter(description = "Customer ID") @PathVariable Long id,
+		@Parameter(description = "Customer ID") @PathVariable UUID id,
 		@Valid @RequestBody Customer customer)
 	{
 		log.info("REST call: PUT /digg/user/{} with data: {}", id, customer);
@@ -138,7 +139,7 @@ public class CustomerController
 		@ApiResponse(responseCode = "404", description = "Customer not found")
 	})
 	@DeleteMapping("/{id}")
-	public ResponseEntity<Void> deleteCustomer(@Parameter(description = "Customer ID") @PathVariable Long id)
+	public ResponseEntity<Void> deleteCustomer(@Parameter(description = "Customer ID") @PathVariable UUID id)
 	{
 		log.info("REST call: DELETE /digg/user/{}", id);
 		boolean deleted = customerService.deleteCustomer(id);

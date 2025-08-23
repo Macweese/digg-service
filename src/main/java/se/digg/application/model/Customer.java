@@ -2,6 +2,7 @@ package se.digg.application.model;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,7 +10,7 @@ import lombok.Setter;
 @Setter
 public class Customer
 {
-	private Long id;
+	private UUID id = UUID.randomUUID();
 
 	@NotBlank(message = "Name is required")
 	private String name;
@@ -30,13 +31,14 @@ public class Customer
 
 	public Customer(String name, String address, String email, String telephone)
 	{
+		this.id = UUID.randomUUID();
 		this.name = name;
 		this.address = address;
 		this.email = email;
 		this.telephone = telephone;
 	}
 
-	public Customer(Long id, String name, String address, String email, String telephone)
+	public Customer(UUID id, String name, String address, String email, String telephone)
 	{
 		this.id = id;
 		this.name = name;

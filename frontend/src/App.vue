@@ -178,11 +178,17 @@ function nextPage() {
   if (currentPage.value < (usersPage.value.totalPages - 1)) {
     currentPage.value++;
   }
+  nextTick(() => {
+    firstInput.value?.focus({ preventScroll: true });
+  });
 }
 function prevPage() {
   if (currentPage.value > 0) {
     currentPage.value--;
   }
+  nextTick(() => {
+    firstInput.value?.focus({ preventScroll: true });
+  });
 }
 
 // --- WEBSOCKET ---

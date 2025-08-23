@@ -213,9 +213,9 @@ function connectWebSocket() {
           return;
         }
         if (
-          payload.event === "USER_ADDED" ||
-          payload.event === "USER_DELETED" ||
-          payload.event === "USER_EDITED"
+          payload.event === "ADD" ||
+          payload.event === "DELETE" ||
+          payload.event === "EDIT"
         ) {
           loadUsers();
         }

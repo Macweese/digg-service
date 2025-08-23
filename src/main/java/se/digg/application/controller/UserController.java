@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import se.digg.application.events.UserEvent;
 import se.digg.application.model.User;
 import se.digg.application.service.UserServiceImpl;
 
@@ -111,7 +112,7 @@ public class UserController
 		log.info("REST call: POST /digg/user with data: {}", user);
 		User createdUser = userServiceImpl.createUser(user);
 
-		messagingTemplate.convertAndSend("/topic/users", Map.of("event", "USER_ADDED"));
+		messagingTemplate.convertAndSend("/topic/users", Map.of("event", UserEvent.ADD));
 		return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
 	}
 
@@ -129,7 +130,7 @@ public class UserController
 		Optional<User> updatedUser = userServiceImpl.updateUser(id, user);
 		if (updatedUser.isPresent())
 		{
-			messagingTemplate.convertAndSend("/topic/users", Map.of("event", "USER_EDITED"));
+			messagingTemplate.convertAndSend("/topic/users", Map.of("event", UserEvent.EDIT));
 			return updatedUser.get();
 		}
 		else
@@ -147,6 +148,6 @@ public class UserController
 	{
 		log.info("REST call: DELETE /digg/user/{}", id);
 		userServiceImpl.deleteUser(id);
-		messagingTemplate.convertAndSend("/topic/users", Map.of("event", "USER_DELETED"));
+		messagingTemplate.convertAndSend("/topic/users", Map.of("event", UserEvent.DELETE));
 	}
 }

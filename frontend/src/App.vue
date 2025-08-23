@@ -106,7 +106,7 @@ onBeforeUnmount(() => {
       <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
         <!-- Search with Ctrl + K hint -->
         <div class="relative w-full sm:max-w-xs">
-          <div class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400/70">
+          <div class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400/50">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line></svg>
           </div>
           <input
@@ -114,8 +114,8 @@ onBeforeUnmount(() => {
             v-model="searchTerm"
             type="text"
             placeholder="Search"
-            class="w-full pl-10 pr-20 py-2 font-semibold text-slate-400/10 text-sm border tracking-wider border-slate-300 dark:border-slate-600 rounded-md bg-slate-100 dark:bg-slate-700/50 focus:outline-none focus-visible:bg-slate-900/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-500 focus-visible:ring-offset-0 transition delay-50 duration-150 ease-in-out"
-            :style="{ fontFamily: 'Courier New, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace', userSelect: 'none', WebkitUserSelect: 'none' }"
+            class="w-full pl-10 pr-20 py-2 font-medium text-slate-200 text-xs border tracking-widest border-slate-300 dark:border-slate-600 rounded-md bg-slate-100 dark:bg-slate-700/50 focus:outline-none focus-visible:bg-slate-900/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-500 focus-visible:ring-offset-0 transition delay-50 duration-150 ease-in-out"
+            :style="{ userSelect: 'none', WebkitUserSelect: 'none' }"
           />
           <!-- Monospace keybind hint on the right -->
           <span

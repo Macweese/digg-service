@@ -1,4 +1,4 @@
-package se.digg.application.cors;
+package se.digg.application.config;
 
 import java.util.Arrays;
 import org.springframework.context.annotation.Bean;

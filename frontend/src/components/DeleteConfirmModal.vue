@@ -46,12 +46,12 @@ onBeforeUnmount(() => {
             <h3 class="mt-5 mb-2 text-lg font-semibold text-slate-900 dark:text-white">Delete User</h3>
             <p class="text-sm text-slate-500 dark:text-slate-400">Are you sure you want to delete this user?<br>This action cannot be undone.</p>
           </div>
-          <div class="bg-slate-50 dark:bg-slate-700 px-6 py-4 flex justify-center gap-3 rounded-b-lg">
+          <div class="bg-slate-50 dark:bg-slate-700 px-6 py-4 flex justify-center gap-20 rounded-b-lg">
             <button @click="emit('cancel')" class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-600 border border-slate-300 dark:border-slate-500 rounded-md hover:bg-slate-50 dark:hover:bg-slate-500 focus:outline-none focus:ring-2  focus:ring-blue-500/80 transition delay-50 duration-150 ease-in-out" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
               Cancel
             </button>
-            <button @click="emit('confirm')" class="px-4 py-2 text-sm font-medium text-white bg-red-600/40 border border-transparent rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2  focus:ring-red-500/60 transition delay-50 duration-150 ease-in-out" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
-              Confirm Delete
+            <button @click="emit('confirm')" class="px-4 py-2 text-sm font-medium text-white bg-red-600/40 border border-transparent rounded-md shadow-sm hover:bg-red-700/80 focus:outline-none focus:ring-2  focus:ring-red-500/60 transition delay-50 duration-150 ease-in-out" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
+              Delete
             </button>
           </div>
         </div>

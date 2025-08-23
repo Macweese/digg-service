@@ -313,7 +313,7 @@ onMounted(() => {
 
       <div class="overflow-x-auto" :style="{ minHeight: '600px' }">
         <div v-if="showLoading" class="text-center py-12">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-400 mx-auto"></div>
           <p class="mt-4 text-slate-500 dark:text-slate-400">Loading users...</p>
         </div>
         <table v-else-if="usersPage.content.length > 0" class="w-full text-sm text-left text-slate-500 dark:text-slate-400 fixed-table">

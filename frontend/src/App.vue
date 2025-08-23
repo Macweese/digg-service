@@ -12,7 +12,6 @@ const usersPage = ref({
   totalElements: 0,
   number: 0, // current page index
 });
-const isLoading = ref(true);
 const isModalOpen = ref(false);
 const firstInput = ref(null);
 const editingUser = ref(null);
@@ -23,6 +22,9 @@ const userToDelete = ref(null);
 const toastMessage = ref('');
 const errorMessage = ref('');
 const itemsPerPage = ref(10);
+const isLoading = ref(false)
+const showLoading = ref(false)
+let loadingTimeout = null
 
 const userForm = reactive({
   id: null,
@@ -38,33 +40,37 @@ const BASE_API_URL = 'http://localhost:8080/digg/user';
 
 // --- METHODS ---
 async function loadUsers() {
-  isLoading.value = true;
-  errorMessage.value = '';
-  let url;
-  let query = searchTerm.value.trim();
+  isLoading.value = true
+  showLoading.value = false
+  if (loadingTimeout) clearTimeout(loadingTimeout)
+  loadingTimeout = setTimeout(() => {
+    if (isLoading.value) showLoading.value = true
+  }, 350)
+
+  let url
+  let query = searchTerm.value.trim()
 
   if (query) {
-    url = `${BASE_API_URL}/${currentPage.value}/${itemsPerPage.value}/search/${encodeURIComponent(query)}`;
+    url = `${BASE_API_URL}/${currentPage.value}/${itemsPerPage.value}/search/${encodeURIComponent(query)}`
   } else {
-    url = `${BASE_API_URL}/${currentPage.value}/${itemsPerPage.value}`;
+    url = `${BASE_API_URL}/${currentPage.value}/${itemsPerPage.value}`
   }
 
   try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    const page = await response.json();
-    usersPage.value = page;
-    usersPage.value.content = usersPage.value.content || [];
+    const response = await fetch(url)
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+    const page = await response.json()
+    usersPage.value = page
+    usersPage.value.content = usersPage.value.content || []
   } catch (error) {
-    errorMessage.value = "Could not load users: " + error.message;
-    usersPage.value = {
-      content: [],
-      totalPages: 1,
-      totalElements: 0,
-      number: 0,
-    };
+    errorMessage.value = "Could not load users: " + error.message
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
+    if (loadingTimeout) clearTimeout(loadingTimeout)
+    // Wait for the next tick to hide the spinner, in case the DOM hasn't updated yet
+    setTimeout(() => {
+      showLoading.value = false
+    }, 0)
   }
 }
 
@@ -292,7 +298,7 @@ onMounted(() => {
       </div>
 
       <div class="overflow-x-auto" :style="{ minHeight: '600px' }">
-        <div v-if="isLoading" class="text-center py-12">
+        <div v-if="showLoading" class="text-center py-12">
           <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
           <p class="mt-4 text-slate-500 dark:text-slate-400">Loading users...</p>
         </div>

@@ -4,6 +4,7 @@ import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue';
 import { ChevronDownIcon } from '@heroicons/vue/20/solid';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import { UserEventType } from './events';
 
 // --- STATE ---
 const usersPage = ref({
@@ -67,6 +68,7 @@ async function loadUsers() {
   } finally {
     isLoading.value = false
     if (loadingTimeout) clearTimeout(loadingTimeout)
+    // Wait for the next tick to hide the spinner, in case the DOM hasn't updated yet
     setTimeout(() => {
       showLoading.value = false
     }, 0)
@@ -204,20 +206,19 @@ function connectWebSocket() {
     webSocketFactory: () => socket,
     reconnectDelay: 60000,
     onConnect: () => {
-      stompClient.subscribe('/topic/users', (message) => {
-        let payload;
+      // Robust handler: accepts both {"event":"..."} and "..." forms.
+      stompClient.subscribe('/topic/users', async (message) => {
+        let event;
         try {
-          payload = JSON.parse(message.body);
-        } catch (e) {
-          console.error("Could not parse WebSocket message body as JSON:", message.body);
-          return;
+          const payload = JSON.parse(message.body);
+          event = typeof payload === 'string' ? payload : payload?.event;
+        } catch {
+          // If backend ever sends a plain string in body
+          event = message.body;
         }
-        if (
-          payload.event === "ADD" ||
-          payload.event === "DELETE" ||
-          payload.event === "EDIT"
-        ) {
-          loadUsers();
+
+        if (typeof event === 'string' && Object.values(UserEventType).includes(event)) {
+          await loadUsers();
         }
       });
     },
@@ -410,7 +411,7 @@ onMounted(() => {
   <div v-if="isDeleteConfirmOpen" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4" @click="isDeleteConfirmOpen = false">
     <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-sm" @click.stop>
       <div class="p-6 text-center" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-12 w-12 text-red-500 mx-auto"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-12 w-12 text-red-500 mx-auto"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a 2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
         <h3 class="mt-5 mb-2 text-lg font-semibold text-slate-900 dark:text-white">Delete User</h3>
         <p class="text-sm text-slate-500 dark:text-slate-400">Are you sure you want to delete this user? This action cannot be undone.</p>
       </div>

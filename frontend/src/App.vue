@@ -67,7 +67,6 @@ async function loadUsers() {
   } finally {
     isLoading.value = false
     if (loadingTimeout) clearTimeout(loadingTimeout)
-    // Wait for the next tick to hide the spinner, in case the DOM hasn't updated yet
     setTimeout(() => {
       showLoading.value = false
     }, 0)
@@ -206,10 +205,20 @@ function connectWebSocket() {
     reconnectDelay: 60000,
     onConnect: () => {
       stompClient.subscribe('/topic/users', (message) => {
-        const page = JSON.parse(message.body);
-        usersPage.value = page;
-        usersPage.value.content = usersPage.value.content || [];
-        isLoading.value = false;
+        let payload;
+        try {
+          payload = JSON.parse(message.body);
+        } catch (e) {
+          console.error("Could not parse WebSocket message body as JSON:", message.body);
+          return;
+        }
+        if (
+          payload.event === "USER_ADDED" ||
+          payload.event === "USER_DELETED" ||
+          payload.event === "USER_EDITED"
+        ) {
+          loadUsers();
+        }
       });
     },
     onStompError: (frame) => {

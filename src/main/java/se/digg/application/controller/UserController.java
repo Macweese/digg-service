@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,11 +48,6 @@ public class UserController
 		this.userServiceImpl = userServiceImpl;
 	}
 
-	/**
-	 * @param page
-	 * @param size
-	 * @return
-	 */
 	@GetMapping("/{page}/{size}")
 	@Operation(summary = "Retrieve paged users", description = "Get all users with pagination")
 	@ApiResponse(responseCode = "200", description = "Successfully retrieved users")
@@ -63,7 +59,6 @@ public class UserController
 		Pageable pageable = PageRequest.of(page, size);
 		Page<User> userPage = userServiceImpl.getUsers(pageable);
 
-		messagingTemplate.convertAndSend("/topic/users", userPage);
 		return ResponseEntity.ok(userPage);
 	}
 
@@ -79,7 +74,6 @@ public class UserController
 		Pageable pageable = PageRequest.of(page, size);
 		Page<User> userPage = userServiceImpl.queryUsers(query, pageable);
 
-		messagingTemplate.convertAndSend("/topic/users", userPage);
 		return ResponseEntity.ok(userPage);
 	}
 
@@ -90,22 +84,6 @@ public class UserController
 		@RequestParam(required = false) String query)
 	{
 		return ResponseEntity.ok(userServiceImpl.getAllUsers());
-	}
-
-	@PostMapping
-	@Operation(summary = "Create a new user", description = "Add a new user to the storage")
-	@ApiResponses(value = {
-		@ApiResponse(responseCode = "201", description = "User created successfully"),
-		@ApiResponse(responseCode = "400", description = "Invalid user data")
-	})
-	public ResponseEntity<User> createUser(@Valid @RequestBody User user)
-	{
-		log.info("REST call: POST /digg/user with data: {}", user);
-		User createdUser = userServiceImpl.createUser(user);
-
-		messagingTemplate.convertAndSend("/topic/user-created", createdUser);
-
-		return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
 	}
 
 	@GetMapping("/{id}")
@@ -122,30 +100,41 @@ public class UserController
 		return user.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
 	}
 
-	@PutMapping("/{id}")
+	@PostMapping("/add")
+	@Operation(summary = "Create a new user", description = "Add a new user to the storage")
+	@ApiResponses(value = {
+		@ApiResponse(responseCode = "201", description = "User created successfully"),
+		@ApiResponse(responseCode = "400", description = "Invalid user data")
+	})
+	public ResponseEntity<User> createUser(@Valid @RequestBody User user)
+	{
+		log.info("REST call: POST /digg/user with data: {}", user);
+		User createdUser = userServiceImpl.createUser(user);
+
+		messagingTemplate.convertAndSend("/topic/users", Map.of("event", "USER_ADDED"));
+		return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
+	}
+
+	@PutMapping("/edit/{id}")
 	@Operation(summary = "Update user", description = "Update an existing user")
 	@ApiResponses(value = {
 		@ApiResponse(responseCode = "200", description = "User updated successfully"),
 		@ApiResponse(responseCode = "404", description = "User not found"),
 		@ApiResponse(responseCode = "400", description = "Invalid user data")
 	})
-	public ResponseEntity<User> updateUser(
-		@Parameter(description = "User ID") @PathVariable Long id,
-		@Valid @RequestBody User user)
+	public User updateUser(@Parameter(description = "User ID") @PathVariable Long id, @Valid @RequestBody User user)
 	{
-
 		log.info("REST call: PUT /digg/user/{} with data: {}", id, user);
 
 		Optional<User> updatedUser = userServiceImpl.updateUser(id, user);
-
 		if (updatedUser.isPresent())
 		{
-			messagingTemplate.convertAndSend("/topic/user-updated", updatedUser.get());
-			return ResponseEntity.ok(updatedUser.get());
+			messagingTemplate.convertAndSend("/topic/users", Map.of("event", "USER_EDITED"));
+			return updatedUser.get();
 		}
 		else
 		{
-			return ResponseEntity.notFound().build();
+			return null;
 		}
 	}
 
@@ -153,23 +142,11 @@ public class UserController
 	@Operation(summary = "Delete user", description = "Delete a user from the system")
 	@ApiResponses(value = {
 		@ApiResponse(responseCode = "204", description = "User deleted successfully"),
-		@ApiResponse(responseCode = "404", description = "User not found")
-	})
-	public ResponseEntity<Void> deleteUser(@Parameter(description = "User ID") @PathVariable Long id)
+		@ApiResponse(responseCode = "404", description = "User not found")})
+	public void deleteUser(@PathVariable Long id)
 	{
 		log.info("REST call: DELETE /digg/user/{}", id);
-		boolean deleted = userServiceImpl.deleteUser(id);
-
-		if (deleted)
-		{
-			messagingTemplate.convertAndSend("/topic/user-deleted", id);
-			return ResponseEntity.noContent().build();
-		}
-		else
-		{
-			return ResponseEntity.notFound().build();
-		}
+		userServiceImpl.deleteUser(id);
+		messagingTemplate.convertAndSend("/topic/users", Map.of("event", "USER_DELETED"));
 	}
-
-
 }

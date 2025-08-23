@@ -34,7 +34,7 @@ const emit = defineEmits<{
         <td class="px-6 py-4 hidden lg:table-cell">{{ user.address }}</td>
         <td class="px-6 py-4">
           <div class="flex justify-end items-center gap-2">
-            <button @click="emit('edit', user)" class="p-2 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <button @click="emit('edit', user)" class="p-2 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path></svg>
             </button>
             <button @click="emit('delete', user.id)" class="p-2 text-slate-500 hover:text-red-600 dark:hover:text-red-400 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500">

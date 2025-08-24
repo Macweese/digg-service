@@ -1,7 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~   Copyright (c) HAN, 2025
+  ~   Licensed under the EUPL-1.2-or-later, with extension of article 5
+  ~   (compatibility clause) to any licence for distributing derivative works
+  ~   that have been produced by the normal use of the Work as a library.
+  ~   See the LICENSE file for the full details of EUPL-1.2
+  -->
+
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+	<licenses>
+		<license>
+			<name>European Union Public Licence 1.2 (EUPL-1.2)</name>
+			<url>https://eupl.eu/1.2/en/</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>

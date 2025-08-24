@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~   Copyright (c) HAN, 2025
+  ~   Licensed under the EUPL-1.2-or-later, with extension of article 5
+  ~   (compatibility clause) to any licence for distributing derivative works
+  ~   that have been produced by the normal use of the Work as a library.
+  ~   See the LICENSE file for the full details of EUPL-1.2
+  -->
+
 <coverage generated="1755949799913" clover="3.2.0">
   <project timestamp="1755949799913" name="All files">
     <metrics statements="508" coveredstatements="328" conditionals="31" coveredconditionals="19" methods="30" coveredmethods="7" elements="569" coveredelements="354" complexity="0" loc="508" ncloc="508" packages="2" files="4" classes="4"/>

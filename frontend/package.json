@@ -1,4 +1,42 @@
 {
+  "name": "digg-service",
+  "version": "1.0.0",
+  "description": "Dashboard front-end for a technical project tasked by DIGG (Sweden). Built with Vue 3, Vite, and Tailwind CSS.",
+  "private": true,
+  "license": "EUPL-1.2",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Macweese/digg-service.git",
+    "directory": "frontend"
+  },
+  "homepage": "https://github.com/Macweese/digg-service#readme",
+  "bugs": {
+    "url": "https://github.com/Macweese/digg-service/issues"
+  },
+  "keywords": [
+    "vue",
+    "vite",
+    "tailwindcss",
+    "dashboard",
+    "digg",
+    "sweden",
+    "public-sector"
+  ],
+  "author": "Macweese",
+  "main": "main.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "serve": "vite preview",
+    "lint": "eslint src --ext .js,.vue",
+    "lint:fix": "eslint src --ext .js,.vue --fix",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:watch": "vitest --watch",
+    "test:ci": "vitest --coverage --run"
+  },
   "dependencies": {
     "@headlessui/vue": "^1.7.23",
     "@heroicons/vue": "^2.2.0",
@@ -28,25 +66,5 @@
     "tailwindcss": "^3.4.0",
     "vite": "^4.5.14",
     "vitest": "^3.2.4"
-  },
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "serve": "vite preview",
-    "lint": "eslint src --ext .js,.vue",
-    "lint:fix": "eslint src --ext .js,.vue --fix",
-    "test": "vitest",
-    "test:ui": "vitest --ui",
-    "test:watch": "vitest --watch",
-    "test:ci": "vitest --coverage --run"
-  },
-  "name": "digg-dashboard",
-  "version": "1.0.0",
-  "description": "",
-  "main": "main.js",
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs"
+  }
 }

@@ -130,6 +130,7 @@ jobs:
           REPO_LC=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           echo "BACKEND_IMAGE=ghcr.io/${REPO_LC}-backend" >> "$GITHUB_ENV"
           echo "FRONTEND_IMAGE=ghcr.io/${REPO_LC}-frontend" >> "$GITHUB_ENV"
+          echo "FULLSTACK_IMAGE=ghcr.io/${REPO_LC}-fullstack" >> "$GITHUB_ENV"
           echo "SHA_TAG=sha-${{ github.sha }}" >> "$GITHUB_ENV"
 
       # Backend img
@@ -159,3 +160,18 @@ jobs:
             ${{ env.FRONTEND_IMAGE }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Build (and Push) Fullstack Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.fullstack
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          platforms: linux/amd64
+          tags: |
+            ${{ env.FULLSTACK_IMAGE }}:${{ env.SHA_TAG }}
+            ${{ env.FULLSTACK_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VITE_API_URL=/api

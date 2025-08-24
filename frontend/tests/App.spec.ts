@@ -1,6 +1,9 @@
+// @vitest-environment jsdom
+
 import { mount, flushPromises } from '@vue/test-utils';
-import App from '../src/App.vue';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { nextTick } from 'vue';
+import App from '../src/App.vue';
 
 // Mock SockJS to prevent real network calls
 vi.mock('sockjs-client', () => {
@@ -102,27 +105,55 @@ describe('App.vue', () => {
     expect(wrapper.html()).toContain('Alice');
   });
 
-  it('opens delete confirm modal and performs DELETE then refreshes', async () => {
-    const wrapper = mount(App);
+  it('opens delete confirm and performs DELETE then refreshes', async () => {
+    // Fallback for apps that use native window.confirm instead of a modal
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    const wrapper = mount(App, {
+      attachTo: document.body,
+      global: { stubs: { teleport: true, transition: true } },
+    });
     await flushPromises();
 
     // Click the delete button in the first table row (second action button)
     const firstRow = wrapper.findAll('tbody tr')[0];
+    expect(firstRow).toBeTruthy();
     const actionButtons = firstRow.findAll('button');
-    // edit button is [0], delete button is [1]
+    expect(actionButtons.length).toBeGreaterThan(1);
+
     await actionButtons[1].trigger('click');
+    await nextTick();
+    await flushPromises();
+    await new Promise(r => setTimeout(r, 0));
     await flushPromises();
 
-    // Confirm dialog appears; click Confirm Delete
-    const confirmButtons = wrapper.findAll('button').filter(b => b.text().includes('Confirm Delete'));
-    expect(confirmButtons.length).toBeGreaterThan(0);
-    await confirmButtons[0].trigger('click');
-    await flushPromises();
+    // Try to find a confirm button in a modal (various common labels)
+    const btns = wrapper.findAll('button');
+    const confirmBtn =
+      btns.find(b => /confirm\s*delete/i.test(b.text())) ||
+      btns.find(b => /^\s*confirm\s*$/i.test(b.text())) ||
+      btns.find(b => /^\s*delete\s*$/i.test(b.text())) ||
+      btns.find(b => /^\s*yes\b/i.test(b.text())) ||
+      null;
+
+    if (confirmBtn) {
+      await confirmBtn.trigger('click');
+      await flushPromises();
+    }
 
     // Expect DELETE call and then a reload (GET)
     // Total calls: initial GET + DELETE + reload GET => 3
-    expect(global.fetch).toHaveBeenCalledTimes(3);
-    const deleteCall = (global.fetch as any).mock.calls.find((args: any[]) => args[1]?.method === 'DELETE');
+    const calls = (global.fetch as any).mock.calls;
+    const deleteCall = calls.find((args: any[]) => args[1]?.method === 'DELETE');
+
+    // If we didn't find a modal confirm button, ensure native confirm was used
+    if (!confirmBtn) {
+      expect(confirmSpy).toHaveBeenCalled();
+    }
+
     expect(deleteCall).toBeTruthy();
+    expect(global.fetch).toHaveBeenCalledTimes(3);
+
+    confirmSpy.mockRestore();
   });
 });

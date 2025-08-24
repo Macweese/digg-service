@@ -35,12 +35,11 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:watch": "vitest --watch",
-    "test:ci": "vitest --coverage --run"
+    "test:ci": "vitest --coverage --run --environment jsdom"
   },
   "dependencies": {
     "@headlessui/vue": "^1.7.23",
     "@heroicons/vue": "^2.2.0",
-    "@stomp/stompjs": "^7.1.1",
     "autoprefixer": "^10.4.21",
     "axios": "^1.11.0",
     "net": "^1.0.2",
@@ -53,6 +52,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
+    "@stomp/stompjs": "^7.1.1",
     "@tailwindcss/forms": "^0.5.10",
     "@tailwindcss/typography": "^0.5.16",
     "@vitejs/plugin-vue": "^4.6.2",

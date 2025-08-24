@@ -93,3 +93,4 @@ application.log*
 
 # Docker
 .dockerignore
+*.patch

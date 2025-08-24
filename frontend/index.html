@@ -1,126 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customer Management</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.4/vue.global.min.js"></script>
-    <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8"/>
+    <link rel="icon" type="image/x-icon" href="/assets/public/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Digg Dashboard</title>
+
+    <script>
+      window.global = window;
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 </head>
-<body>
-<div id="app">
-    <div class="container">
-        <div class="header">
-            <h1>Management System</h1>
-        </div>
-        <div v-if="error" class="error">
-            {{ error }}
-            <button @click="error = null" style="float: right; background: none; color: inherit; padding: 5px;">×</button>
-        </div>
-
-        <div v-if="success" class="success">
-            {{ success }}
-            <button @click="success = null" style="float: right; background: none; color: inherit; padding: 5px;">×</button>
-        </div>
-
-        <div class="controls">
-            <div class="pagination">
-                <button @click="previousPage" :disabled="currentPage === 0">
-                    ← Previous
-                </button>
-                <span class="pagination-info">
-                        Page {{ currentPage + 1 }} of {{ totalPages }}
-                        ({{ totalElements }} total customers)
-                    </span>
-                <button @click="nextPage" :disabled="currentPage >= totalPages - 1">
-                    Next →
-                </button>
-            </div>
-            <button class="add-customer-btn" @click="showAddModal">
-                + Add Customer
-            </button>
-        </div>
-
-        <div v-if="loading" class="loading">
-            Loading customers...
-        </div>
-
-        <div v-else class="customer-table-container">
-            <table class="customer-table">
-                <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Address</th>
-                    <th>Email</th>
-                    <th>Telephone</th>
-                    <th>Actions</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr v-for="(customer, index) in customers" :key="customer.id">
-                    <td>{{ (currentPage * pageSize) + index + 1 }}</td>
-                    <td>
-                        <div class="customer-name">{{ customer.name }}</div>
-                    </td>
-                    <td>{{ customer.address }}</td>
-                    <td>{{ customer.email }}</td>
-                    <td>{{ customer.telephone }}
-                    </td>
-                    <td>
-                        <div class="customer-actions">
-                            <button class="edit-btn" @click="editCustomer(customer)" title="Edit customer">
-                                Edit
-                            </button>
-                            <button class="delete-btn" @click="deleteCustomer(customer.id)" title="Delete customer">
-                                Delete
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-                <tr v-if="customers.length === 0">
-                    <td colspan="6" style="text-align: center; padding: 2rem; color: #666;">
-                        No customers found.
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Add/Edit Modal -->
-        <div class="modal" :class="{ active: showModal }">
-            <div class="modal-content">
-                <h2>{{ isEditing ? 'Edit Customer' : 'Add New Customer' }}</h2>
-                <form @submit.prevent="saveCustomer">
-                    <div class="form-group">
-                        <label for="name">Name *</label>
-                        <input type="text" id="name" v-model="customerForm.name" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="address">Address *</label>
-                        <input type="text" id="address" v-model="customerForm.address" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="email">Email *</label>
-                        <input type="email" id="email" v-model="customerForm.email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="telephone">Telephone *</label>
-                        <input type="tel" id="telephone" v-model="customerForm.telephone" required>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="cancel-btn" @click="closeModal">
-                            Cancel
-                        </button>
-                        <button type="submit" :disabled="saving">
-                            {{ saving ? 'Saving...' : (isEditing ? 'Update' : 'Add') }}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-<script src="main.js"></script>
+<body class="bg-slate-50 dark:bg-slate-900">
+<div id="app" class="font-sans text-slate-800 dark:text-slate-200"></div>
+<script type="module" src="/src/main.js"></script>
 </body>
 </html>

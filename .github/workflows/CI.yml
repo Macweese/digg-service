@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   backend:
-    name: Backend • Build & Test
+    name: Backend • Test & Build
     runs-on: ubuntu-latest
 
     steps:

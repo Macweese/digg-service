@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, watch, onBeforeUnmount } from 'vue';
+import { reactive, watch, onBeforeUnmount, ref } from 'vue';
 import type { User } from '../types';
 
 const props = defineProps<{
@@ -19,23 +19,139 @@ const form = reactive<User>({
   telephone: ''
 });
 
+type Field = 'name' | 'email' | 'telephone' | 'address';
+
+const fields: Field[] = ['name', 'email', 'telephone', 'address'];
+
+const errors = reactive<Record<Field, string | null>>({
+  name: null,
+  email: null,
+  telephone: null,
+  address: null
+});
+
+const touched = reactive<Record<Field, boolean>>({
+  name: false,
+  email: false,
+  telephone: false,
+  address: false
+});
+
+const submitAttempted = ref(false);
+
+// element refs to focus first invalid
+const inputRefs: Record<Field, any> = {
+  name: ref<HTMLInputElement | null>(null),
+  email: ref<HTMLInputElement | null>(null),
+  telephone: ref<HTMLInputElement | null>(null),
+  address: ref<HTMLInputElement | null>(null)
+};
+
+// Reset form values (used when modal closes or user prop cleared)
 function reset(): void {
   form.id = undefined;
   form.name = '';
   form.address = '';
   form.email = '';
   form.telephone = '';
+
+  fields.forEach(f => {
+    errors[f] = null;
+    touched[f] = false;
+  });
+  submitAttempted.value = false;
 }
 
 watch(() => props.user, (u) => {
   if (u) {
     Object.assign(form, u);
+    // clear errors/touched when loading an existing user
+    fields.forEach(f => {
+      errors[f] = null;
+      touched[f] = false;
+    });
+    submitAttempted.value = false;
   } else {
     reset();
   }
 }, { immediate: true });
 
+// Validation rules
+function validateField(field: Field): string | null {
+  const val = String((form as any)[field] ?? '').trim();
+
+  switch (field) {
+    case 'name':
+      if (!val) return 'Name is required';
+      if (val.length < 2) return 'Name must be at least 2 characters';
+      return null;
+
+    case 'email': {
+      if (!val) return 'Email is required';
+      // simple email pattern
+      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!re.test(val)) return 'Enter a valid email address';
+      return null;
+    }
+
+    case 'telephone': {
+      if (!val) return 'Telephone is required';
+      // allow digits, spaces, hyphen, parentheses, leading +
+      const re = /^\+?[0-9\s\-().]{6,}$/;
+      if (!re.test(val)) return 'Enter a valid phone number';
+      return null;
+    }
+
+    case 'address':
+      if (!val) return 'Address is required';
+      if (val.length < 4) return 'Address looks too short';
+      return null;
+  }
+}
+
+function validateAll(): boolean {
+  let ok = true;
+  fields.forEach(f => {
+    const msg = validateField(f);
+    errors[f] = msg;
+    if (msg) ok = false;
+  });
+  return ok;
+}
+
+function showError(field: Field): boolean {
+  return !!errors[field] && (touched[field] || submitAttempted.value);
+}
+
+function onBlur(field: Field) {
+  touched[field] = true;
+  errors[field] = validateField(field);
+}
+
+function onInput(field: Field) {
+  // Live re-validate once touched or after a submit attempt
+  if (touched[field] || submitAttempted.value) {
+    errors[field] = validateField(field);
+  }
+}
+
+function focusFirstError() {
+  for (const f of fields) {
+    if (errors[f]) {
+      const el = inputRefs[f].value as HTMLInputElement | null;
+      if (el) el.focus();
+      break;
+    }
+  }
+}
+
 function onSubmit(): void {
+  submitAttempted.value = true;
+  const ok = validateAll();
+  if (!ok) {
+    focusFirstError();
+    return;
+  }
   emit('save', { ...form });
 }
 
@@ -52,12 +168,9 @@ function onKeydown(e: KeyboardEvent) {
   if (
     e.key === 'Enter' &&
     !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey &&
-    // avoid IME confirm
     !(e as any).isComposing &&
-    // don't intercept multiline inputs
     !(e.target instanceof HTMLTextAreaElement)
   ) {
-    // prevent default form auto-submit to avoid double submit
     e.preventDefault();
     onSubmit();
   }
@@ -92,30 +205,115 @@ onBeforeUnmount(() => {
           aria-modal="true"
           @click.stop
         >
-          <form @submit.prevent="onSubmit">
+          <form @submit.prevent="onSubmit" novalidate>
             <div class="p-6">
               <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
                 {{ form.id ? 'Edit User' : 'Add New User' }}
               </h2>
+
               <div class="space-y-4">
+                <!-- Name -->
                 <div>
                   <label for="name" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">Name</label>
-                  <input type="text" id="name" v-model="form.name" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/80 dark:text-white transition delay-50 duration-150 ease-in-out" />
+                  <input
+                    ref="name"
+                    :ref="inputRefs.name"
+                    type="text"
+                    id="name"
+                    v-model="form.name"
+                    required
+                    @blur="onBlur('name')"
+                    @input="onInput('name')"
+                    :aria-invalid="showError('name')"
+                    aria-describedby="name-hint name-error"
+                    class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 dark:text-white transition delay-50 duration-150 ease-in-out"
+                    :class="{ 'border-red-500 focus:ring-red-500/80': showError('name') }"
+                  />
+                  <p id="name-hint" class="mt-1 text-xs text-slate-500 dark:text-slate-400" v-if="!showError('name')">
+                    Enter the user’s full name (min 2 characters).
+                  </p>
+                  <p id="name-error" class="mt-1 text-xs text-red-600" role="alert" v-else>
+                    {{ errors.name }}
+                  </p>
                 </div>
+
+                <!-- Email -->
                 <div>
                   <label for="email" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">Email</label>
-                  <input type="email" id="email" v-model="form.email" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/80 dark:text-white transition delay-50 duration-150 ease-in-out" />
+                  <input
+                    ref="email"
+                    :ref="inputRefs.email"
+                    type="email"
+                    id="email"
+                    v-model="form.email"
+                    required
+                    @blur="onBlur('email')"
+                    @input="onInput('email')"
+                    :aria-invalid="showError('email')"
+                    aria-describedby="email-hint email-error"
+                    class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 dark:text-white transition delay-50 duration-150 ease-in-out"
+                    :class="{ 'border-red-500 focus:ring-red-500/80': showError('email') }"
+                  />
+                  <p id="email-hint" class="mt-1 text-xs text-slate-500 dark:text-slate-400" v-if="!showError('email')">
+                    We’ll use this to contact the user.
+                  </p>
+                  <p id="email-error" class="mt-1 text-xs text-red-600" role="alert" v-else>
+                    {{ errors.email }}
+                  </p>
                 </div>
+
+                <!-- Telephone -->
                 <div>
                   <label for="phone" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">Telephone</label>
-                  <input type="tel" id="phone" v-model="form.telephone" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/80 dark:text-white transition delay-50 duration-150 ease-in-out" />
+                  <input
+                    ref="telephone"
+                    :ref="inputRefs.telephone"
+                    type="tel"
+                    id="phone"
+                    v-model="form.telephone"
+                    required
+                    @blur="onBlur('telephone')"
+                    @input="onInput('telephone')"
+                    :aria-invalid="showError('telephone')"
+                    aria-describedby="telephone-hint telephone-error"
+                    class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 dark:text-white transition delay-50 duration-150 ease-in-out"
+                    :class="{ 'border-red-500 focus:ring-red-500/80': showError('telephone') }"
+                  />
+                  <p id="telephone-hint" class="mt-1 text-xs text-slate-500 dark:text-slate-400" v-if="!showError('telephone')">
+                    Digits, spaces, parentheses, dashes and “+” are allowed.
+                  </p>
+                  <p id="telephone-error" class="mt-1 text-xs text-red-600" role="alert" v-else>
+                    {{ errors.telephone }}
+                  </p>
                 </div>
+
+                <!-- Address -->
                 <div>
                   <label for="address" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">Address</label>
-                  <input type="text" id="address" v-model="form.address" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/80 dark:text-white transition delay-50 duration-150 ease-in-out" />
+                  <input
+                    ref="address"
+                    :ref="inputRefs.address"
+                    type="text"
+                    id="address"
+                    v-model="form.address"
+                    required
+                    @blur="onBlur('address')"
+                    @input="onInput('address')"
+                    :aria-invalid="showError('address')"
+                    aria-describedby="address-hint address-error"
+                    class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 dark:text-white transition delay-50 duration-150 ease-in-out"
+                    :class="{ 'border-red-500 focus:ring-red-500/80': showError('address') }"
+                  />
+                  <p id="address-hint" class="mt-1 text-xs text-slate-500 dark:text-slate-400" v-if="!showError('address')">
+                    Street, number and any additional info.
+                  </p>
+                  <p id="address-error" class="mt-1 text-xs text-red-600" role="alert" v-else>
+                    {{ errors.address }}
+                  </p>
                 </div>
               </div>
             </div>
+
             <div class="bg-slate-50 dark:bg-slate-700 px-6 py-4 flex justify-end gap-3 rounded-b-lg">
               <button type="button" @click="emit('close')" class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-600 border border-slate-300 dark:border-slate-500 rounded-md hover:bg-slate-50 dark:hover:bg-slate-500 focus:outline-none focus:ring-2  focus:ring-opacity-30 focus:ring-blue-500/80 transition delay-50 duration-150 ease-in-out" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
                 Cancel
@@ -146,11 +344,13 @@ onBeforeUnmount(() => {
 .modal-enter-active,
 .modal-leave-active {
   transition: opacity 220ms ease, transform 220ms ease;
-  will-change: opacity, transform;
 }
-.modal-enter-from,
+.modal-enter-from {
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+}
 .modal-leave-to {
   opacity: 0;
-  transform: translateY(10px) scale(0.98);
+  transform: translateY(8px) scale(0.98);
 }
 </style>

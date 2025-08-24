@@ -1,3 +1,4 @@
+# ----- Backend ----- #
 # Maven
 pom.xml.tag
 pom.xml.releaseBackup
@@ -94,3 +95,40 @@ application.log*
 # Docker
 .dockerignore
 *.patch
+
+# ----- Frontend ----- #
+# Dependencies
+frontend/node_modules/
+
+# Build outputs
+frontend/dist/
+frontend/storybook-static/
+
+# Test/coverage artifacts
+frontend/coverage/
+frontend/.nyc_output/
+
+# Tool caches
+frontend/.eslintcache
+frontend/.vite/
+frontend/.cache/
+frontend/.turbo/
+
+# Cypress
+frontend/cypress/videos/
+frontend/cypress/screenshots/
+frontend/cypress/downloads/
+
+# Playwright
+frontend/test-results/
+frontend/playwright-report/
+
+# Env files (keep examples like .env.example committed)
+frontend/.env
+frontend/.env.*
+frontend/!.env.example
+
+# OS/IDE
+frontend/.DS_Store
+frontend/.idea/
+frontend/.vscode/

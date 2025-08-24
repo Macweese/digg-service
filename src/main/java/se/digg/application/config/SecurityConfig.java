@@ -10,13 +10,19 @@ package se.digg.application.config;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+/**
+ * Security
+ * if we want to implement cookies or auth ~~ mainly demo purpose
+ */
 @Configuration
 public class SecurityConfig
 {
@@ -25,20 +31,19 @@ public class SecurityConfig
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception
 	{
 		http
-			// CORS first, THEN disable CSRF for simplicity in this setup
 			.cors(Customizer.withDefaults())
-			.csrf(csrf -> csrf.disable())
+			.csrf(AbstractHttpConfigurer::disable)
 			.authorizeHttpRequests(auth -> auth
+				.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 				.requestMatchers(
-					"/actuator/health",
+					"/ws/**",
+					"/actuator/**",
 					"/v3/api-docs/**",
 					"/swagger-ui/**",
-					"/swagger-ui.html",
-					"/ws/**"
+					"/swagger-ui.html"
 				).permitAll()
 				.anyRequest().permitAll()
 			);
-
 		return http.build();
 	}
 
@@ -46,19 +51,17 @@ public class SecurityConfig
 	public CorsConfigurationSource corsConfigurationSource()
 	{
 		CorsConfiguration config = new CorsConfiguration();
-
-		// Just allow all local origins
-		config.addAllowedOriginPattern("https?://localhost:*");
-
-		// Typical allowed methods/headers
+		config.setAllowedOrigins(List.of(
+			"http://localhost:5173",
+			"http://localhost:8080",
+			"http://localhost:8081"
+		));
 		config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 		config.setAllowedHeaders(List.of("*"));
 		config.setExposedHeaders(List.of("Location"));
-		// If we want to take advantage of cookies/auth
 		config.setAllowCredentials(true);
 
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-		// Apply to all routes
 		source.registerCorsConfiguration("/**", config);
 		return source;
 	}

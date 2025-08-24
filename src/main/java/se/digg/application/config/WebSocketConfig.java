@@ -17,18 +17,26 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer
 {
-	@Override
-	public void configureMessageBroker(MessageBrokerRegistry config)
-	{
-		config.enableSimpleBroker("/topic");
-		config.setApplicationDestinationPrefixes("/app");
-	}
+
+	private static final String WS_ENDPOINT = "/ws";
 
 	@Override
 	public void registerStompEndpoints(StompEndpointRegistry registry)
 	{
-		registry.addEndpoint("/ws")
-			.setAllowedOriginPatterns("https?://localhost:[5173,8080,8081]")
+		registry
+			.addEndpoint(WS_ENDPOINT)
+			.setAllowedOriginPatterns(
+				"http://localhost:8080",
+				"http://localhost:8081",
+				"http://localhost:5173"
+			)
 			.withSockJS();
+	}
+
+	@Override
+	public void configureMessageBroker(MessageBrokerRegistry registry)
+	{
+		registry.setApplicationDestinationPrefixes("/app");
+		registry.enableSimpleBroker("/topic", "/queue");
 	}
 }

@@ -108,7 +108,7 @@ jobs:
   docker:
     name: Docker • Build (and Push on main)
     runs-on: ubuntu-latest
-    needs: [backend, frontend]
+    needs: [ backend, frontend ]
 
     steps:
       - name: Checkout

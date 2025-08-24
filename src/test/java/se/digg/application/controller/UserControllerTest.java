@@ -301,7 +301,8 @@ public class UserControllerTest
 	}
 
 	@Test
-	void testPostUpsertCreateEmitsEventAndReturns201WithLocation() throws Exception {
+	void testPostUpsertCreateEmitsEventAndReturns201WithLocation() throws Exception
+	{
 		var input = new User(null, "Eve", "Elm St 9", "eve@example.com", "070-111222");
 		var saved = new User(777L, "Eve", "Elm St 9", "eve@example.com", "070-111222");
 		when(userServiceImpl.createUser(any(User.class))).thenReturn(saved);
@@ -318,7 +319,8 @@ public class UserControllerTest
 	}
 
 	@Test
-	void testPostUpsertUpdateEmitsEventAndReturns200() throws Exception {
+	void testPostUpsertUpdateEmitsEventAndReturns200() throws Exception
+	{
 		var input = new User(10L, "Name Upd", "Addr", "x@y.z", "123");
 		var updated = new User(10L, "Name Upd", "Addr2", "x@y.z", "456");
 		when(userServiceImpl.updateUser(eq(10L), any(User.class))).thenReturn(Optional.of(updated));
@@ -334,7 +336,8 @@ public class UserControllerTest
 	}
 
 	@Test
-	void testPostUpsertUpdateNotFoundReturns404AndNoEvent() throws Exception {
+	void testPostUpsertUpdateNotFoundReturns404AndNoEvent() throws Exception
+	{
 		var input = new User(999999L, "Missing", "Addr", "missing@example.com", "000");
 		when(userServiceImpl.updateUser(eq(999999L), any(User.class))).thenReturn(Optional.empty());
 
@@ -347,7 +350,8 @@ public class UserControllerTest
 	}
 
 	@Test
-	void testPutUpdateNotFoundReturns404AndNoEvent() throws Exception {
+	void testPutUpdateNotFoundReturns404AndNoEvent() throws Exception
+	{
 		var input = new User(1234L, "Missing", "Addr", "m@e.com", "0");
 		when(userServiceImpl.updateUser(eq(1234L), any(User.class))).thenReturn(Optional.empty());
 
@@ -360,7 +364,8 @@ public class UserControllerTest
 	}
 
 	@Test
-	void testDeleteNotFoundDoesNotEmitEvent() throws Exception {
+	void testDeleteNotFoundDoesNotEmitEvent() throws Exception
+	{
 		when(userServiceImpl.deleteUser(555L)).thenReturn(false);
 
 		mockMvc.perform(delete("/digg/user/555"))
@@ -369,21 +374,33 @@ public class UserControllerTest
 		verify(messagingTemplate, never()).convertAndSend(eq("/topic/users"), any(User.class));
 	}
 
-	private static void assertEvent(Object payload, String expectedEvent) {
-		if (!(payload instanceof Map<?, ?> map)) {
+	private static void assertEvent(Object payload, String expectedEvent)
+	{
+		if (!(payload instanceof Map<?, ?> map))
+		{
 			throw new AssertionError("Payload not a Map");
 		}
 		Object event = map.get("event");
-		if (event == null) throw new AssertionError("Missing 'event' key");
-		if (event instanceof Enum<?> e) {
-			if (!expectedEvent.equals(e.name())) {
+		if (event == null)
+		{
+			throw new AssertionError("Missing 'event' key");
+		}
+		if (event instanceof Enum<?> e)
+		{
+			if (!expectedEvent.equals(e.name()))
+			{
 				throw new AssertionError("Expected " + expectedEvent + " but got " + e.name());
 			}
-		} else if (event instanceof String s) {
-			if (!expectedEvent.equals(s)) {
+		}
+		else if (event instanceof String s)
+		{
+			if (!expectedEvent.equals(s))
+			{
 				throw new AssertionError("Expected " + expectedEvent + " but got " + s);
 			}
-		} else {
+		}
+		else
+		{
 			throw new AssertionError("Unsupported event type: " + event.getClass());
 		}
 	}

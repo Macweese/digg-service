@@ -22,4 +22,4 @@ services:
       - appnet
 
 networks:
-  appnet: {}
+  appnet: { }

@@ -26,6 +26,7 @@ docker compose up --build
 ```
 
 Open:
+
 - Frontend: http://localhost:8081
 - Backend API: http://localhost:8080
 - Health: http://localhost:8080/actuator/health
@@ -62,7 +63,8 @@ docker run --rm -p 8081:80 digg-service-web:latest
 
 ## API proxy (optional)
 
-If your frontend calls the API using the `/api` prefix, Nginx will proxy `/api/*` to the backend (see `nginx.conf`). Update your frontend API base URL accordingly, e.g. `/api/digg/user`.
+If your frontend calls the API using the `/api` prefix, Nginx will proxy `/api/*` to the backend (see `nginx.conf`).
+Update your frontend API base URL accordingly, e.g. `/api/digg/user`.
 
 ## Development tips
 

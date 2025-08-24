@@ -123,6 +123,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Prepare lowercase image names
+      - name: Prepare image names (lowercase)
+        id: prep
+        run: |
+          REPO_LC=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "BACKEND_IMAGE=ghcr.io/${REPO_LC}-backend" >> "$GITHUB_ENV"
+          echo "FRONTEND_IMAGE=ghcr.io/${REPO_LC}-frontend" >> "$GITHUB_ENV"
+          echo "SHA_TAG=sha-${{ github.sha }}" >> "$GITHUB_ENV"
+
       # Backend img
       - name: Build (and Push) Backend Image
         uses: docker/build-push-action@v5
@@ -132,8 +141,8 @@ jobs:
           push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           platforms: linux/amd64
           tags: |
-            ghcr.io/${{ github.repository }}-backend:sha-${{ github.sha }}
-            ghcr.io/${{ github.repository }}-backend:latest
+            ${{ env.BACKEND_IMAGE }}:${{ env.SHA_TAG }}
+            ${{ env.BACKEND_IMAGE }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -141,12 +150,12 @@ jobs:
       - name: Build (and Push) Frontend Image
         uses: docker/build-push-action@v5
         with:
-          context: ./frontend
+          context: .
           file: ./frontend/Dockerfile
           push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           platforms: linux/amd64
           tags: |
-            ghcr.io/${{ github.repository }}-frontend:sha-${{ github.sha }}
-            ghcr.io/${{ github.repository }}-frontend:latest
+            ${{ env.FRONTEND_IMAGE }}:${{ env.SHA_TAG }}
+            ${{ env.FRONTEND_IMAGE }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max

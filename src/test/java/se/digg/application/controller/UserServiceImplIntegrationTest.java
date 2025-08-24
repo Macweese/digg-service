@@ -2,10 +2,12 @@ package se.digg.application.controller;
 
 import io.restassured.RestAssured;
 import static io.restassured.RestAssured.given;
+import static io.restassured.RestAssured.withArgs;
 import io.restassured.http.ContentType;
 import java.util.Map;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -135,5 +137,103 @@ class UserServiceImplIntegrationTest
 			.delete("/1")
 			.then()
 			.statusCode(anyOf(is(204), is(404))); // allow either based on seed data, but delete contract is 204 or 404
+	}
+
+	@Test
+	void testSearchReturnsCreatedUser()
+	{
+		// Create a unique user
+		String marker = "UniqueZed_" + System.currentTimeMillis();
+		Long id =
+			given()
+				.contentType(ContentType.JSON)
+				.body(Map.of(
+					"name", marker,
+					"address", "Somewhere 1",
+					"email", marker.toLowerCase() + "@example.com",
+					"telephone", "999-888"
+				))
+				.when()
+				.post("")
+				.then()
+				.statusCode(201)
+				.extract().jsonPath().getLong("id");
+
+		// Search by part of the unique name
+		given()
+			.when()
+			.get("/0/10/search/" + marker.substring(0, 6))
+			.then()
+			.statusCode(200)
+			.body("totalElements", greaterThanOrEqualTo(1))
+			.body("content.find { it.id == %s }.name", withArgs(id), equalTo(marker));
+	}
+
+	@Test
+	void testPostUpsertUpdateNotFoundReturns404()
+	{
+		given()
+			.contentType(ContentType.JSON)
+			.body(Map.of(
+				"id", 9_999_999,
+				"name", "Ghost",
+				"address", "Nowhere",
+				"email", "ghost@example.com",
+				"telephone", "000"
+			))
+			.when()
+			.post("")
+			.then()
+			.statusCode(404);
+	}
+
+	@Test
+	void testLegacyAddAndEditPathsWork()
+	{
+		// Create via /add
+		Long id =
+			given()
+				.contentType(ContentType.JSON)
+				.body(Map.of(
+					"name", "Legacy Add",
+					"address", "Road 99",
+					"email", "legacy_add_" + System.currentTimeMillis() + "@example.com",
+					"telephone", "111"
+				))
+				.when()
+				.post("/add")
+				.then()
+				.statusCode(201)
+				.body("id", notNullValue())
+				.extract().jsonPath().getLong("id");
+
+		// Update via /edit/{id}
+		given()
+			.contentType(ContentType.JSON)
+			.body(Map.of(
+				"id", id,
+				"name", "Legacy Edit Updated",
+				"address", "Road 100",
+				"email", "legacy_add_" + System.currentTimeMillis() + "@example.com",
+				"telephone", "222"
+			))
+			.when()
+			.put("/edit/" + id)
+			.then()
+			.statusCode(200)
+			.body("name", is("Legacy Edit Updated"));
+	}
+
+	@Test
+	void testCorsPreflightPostOk()
+	{
+		given()
+			.header("Origin", "http://localhost:5173")
+			.header("Access-Control-Request-Method", "POST")
+			.when()
+			.options("")
+			.then()
+			.statusCode(200)
+			.header("Access-Control-Allow-Origin", is("http://localhost:5173"));
 	}
 }

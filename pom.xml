@@ -100,8 +100,6 @@
 			<optional>true</optional>
 			<version>5.7.0</version>
 		</dependency>
-
-
 		<!-- https://mvnrepository.com/artifact/io.rest-assured/rest-assured -->
 		<dependency>
 			<groupId>io.rest-assured</groupId>
@@ -152,70 +150,6 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>3.0.0</version>
 			</plugin>
-
-			<!-- Frontend Maven Plugin: Builds the Vue app -->
-			<!--			<plugin>-->
-			<!--				<groupId>com.github.eirslett</groupId>-->
-			<!--				<artifactId>frontend-maven-plugin</artifactId>-->
-			<!--				<version>1.15.1</version>-->
-			<!--				<configuration>-->
-			<!--					<workingDirectory>serve/digg</workingDirectory>-->
-			<!--					<installDirectory>target</installDirectory>-->
-			<!--				</configuration>-->
-			<!--				<executions>-->
-			<!--					<execution>-->
-			<!--						<id>install-node-and-npm</id>-->
-			<!--						<goals>-->
-			<!--							<goal>install-node-and-npm</goal>-->
-			<!--						</goals>-->
-			<!--						<configuration>-->
-			<!--							<nodeVersion>v24.6.0</nodeVersion>-->
-			<!--							<npmVersion>11.5.2</npmVersion>-->
-			<!--						</configuration>-->
-			<!--					</execution>-->
-			<!--					<execution>-->
-			<!--						<id>npm-install</id>-->
-			<!--						<goals>-->
-			<!--							<goal>npm</goal>-->
-			<!--						</goals>-->
-			<!--						<configuration>-->
-			<!--							<s>install</s>-->
-			<!--						</configuration>-->
-			<!--					</execution>-->
-			<!--					<execution>-->
-			<!--						<id>npm-build</id>-->
-			<!--						<goals>-->
-			<!--							<goal>npm</goal>-->
-			<!--						</goals>-->
-			<!--						<configuration>-->
-			<!--							<s>run build</s>-->
-			<!--						</configuration>-->
-			<!--					</execution>-->
-			<!--				</executions>-->
-			<!--			</plugin>-->
-
-			<!-- Copy built Vue dist to Spring Boot static resources -->
-			<!--			<plugin>-->
-			<!--				<artifactId>maven-resources-plugin</artifactId>-->
-			<!--				<version>3.3.1</version>-->
-			<!--				<executions>-->
-			<!--					<execution>-->
-			<!--						<id>copy-vue-dist</id>-->
-			<!--						<phase>process-resources</phase>-->
-			<!--						<goals>-->
-			<!--							<goal>copy-resources</goal>-->
-			<!--						</goals>-->
-			<!--						<configuration>-->
-			<!--							<outputDirectory>${project.build.directory}/classes/static</outputDirectory>-->
-			<!--							<resources>-->
-			<!--								<resource>-->
-			<!--									<directory>${project.basedir}/serve/digg/dist</directory>  &lt;!&ndash; Changed to your Vue dist output &ndash;&gt;-->
-			<!--								</resource>-->
-			<!--							</resources>-->
-			<!--						</configuration>-->
-			<!--					</execution>-->
-			<!--				</executions>-->
-			<!--			</plugin>-->
 		</plugins>
 	</build>
 </project>

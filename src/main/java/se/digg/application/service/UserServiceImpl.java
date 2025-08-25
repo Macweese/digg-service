@@ -87,7 +87,7 @@ public class UserServiceImpl implements UserService
 	@Override
 	public boolean deleteUser(Long id)
 	{
-		log.info("Attempting to delete user with ID: id={}", id);
+		log.debug("Attempting to delete user with ID: id={}", id);
 		if (userRepository.existsById(id))
 		{
 			userRepository.deleteById(id);

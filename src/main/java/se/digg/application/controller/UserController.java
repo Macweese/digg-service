@@ -68,7 +68,7 @@ public class UserController
 		@PathVariable int page,
 		@PathVariable int size)
 	{
-		log.info("REST call: GET /digg/user/{}/{}", page, size);
+		log.debug("REST call: GET /digg/user/{}/{}", page, size);
 		Pageable pageable = PageRequest.of(page, size);
 		Page<User> userPage = userServiceImpl.getUsers(pageable);
 		return ResponseEntity.ok(PageResponse.fromPage(userPage));
@@ -83,7 +83,7 @@ public class UserController
 		@PathVariable int size,
 		@PathVariable String query)
 	{
-		log.info("REST call: GET /digg/user/{}/{}/search/{}", page, size, query);
+		log.debug("REST call: GET /digg/user/{}/{}/search/{}", page, size, query);
 		Pageable pageable = PageRequest.of(page, size);
 		Page<User> userPage = userServiceImpl.queryUsers(query, pageable);
 		return ResponseEntity.ok(PageResponse.fromPage(userPage));
@@ -107,7 +107,7 @@ public class UserController
 	})
 	public ResponseEntity<User> getUserById(@Parameter(description = "User ID") @PathVariable Long id)
 	{
-		log.info("REST call: GET /digg/user/{}", id);
+		log.debug("REST call: GET /digg/user/{}", id);
 		Optional<User> user = userServiceImpl.getUserById(id);
 		return user.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
 	}
@@ -125,7 +125,7 @@ public class UserController
 	{
 		if (user.getId() == null)
 		{
-			log.info("REST call: POST /digg/user (create) with data: {}", user);
+			log.debug("REST call: POST /digg/user (create) with data: {}", user);
 			User created = userServiceImpl.createUser(user);
 			messagingTemplate.convertAndSend("/topic/users", Map.of("event", UserEvent.ADD));
 			URI location = URI.create("/digg/user/" + created.getId());
@@ -133,7 +133,7 @@ public class UserController
 		}
 		else
 		{
-			log.info("REST call: POST /digg/user (update) with data: {}", user);
+			log.debug("REST call: POST /digg/user (update) with data: {}", user);
 			Optional<User> updated = userServiceImpl.updateUser(user.getId(), user);
 			if (updated.isPresent())
 			{
@@ -153,7 +153,7 @@ public class UserController
 	})
 	public ResponseEntity<User> createUser(@Valid @RequestBody User user)
 	{
-		log.info("REST call: POST /digg/user/add with data: {}", user);
+		log.debug("REST call: POST /digg/user/add with data: {}", user);
 		User createdUser = userServiceImpl.createUser(user);
 		messagingTemplate.convertAndSend("/topic/users", Map.of("event", UserEvent.ADD));
 		URI location = URI.create("/digg/user/" + createdUser.getId());
@@ -187,7 +187,7 @@ public class UserController
 
 	private ResponseEntity<User> doUpdate(Long id, User user)
 	{
-		log.info("REST call: PUT /digg/user/{} with data: {}", id, user);
+		log.debug("REST call: PUT /digg/user/{} with data: {}", id, user);
 		Optional<User> updatedUser = userServiceImpl.updateUser(id, user);
 		if (updatedUser.isPresent())
 		{
@@ -206,7 +206,7 @@ public class UserController
 	})
 	public ResponseEntity<Void> deleteUser(@PathVariable Long id)
 	{
-		log.info("REST call: DELETE /digg/user/{}", id);
+		log.debug("REST call: DELETE /digg/user/{}", id);
 		boolean deleted = userServiceImpl.deleteUser(id);
 		if (deleted)
 		{

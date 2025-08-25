@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!--
+  ~   Copyright (c) HAN, 2025
+  ~   Licensed under the EUPL-1.2-or-later, with extension of article 5
+  ~   (compatibility clause) to any licence for distributing derivative works
+  ~   that have been produced by the normal use of the Work as a library.
+  ~   See the LICENSE file for the full details of EUPL-1.2
+  -->
+<!DOCTYPE suppressions PUBLIC
+		"-//Checkstyle//DTD SuppressionFilter Configuration 1.1//EN"
+		"https://checkstyle.org/dtds/suppressions_1_1.dtd">
+<suppressions>
+	<suppress files="RuntimeTypeAdapterFactory\.java" checks=".*"/>
+</suppressions>

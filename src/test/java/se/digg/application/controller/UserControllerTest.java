@@ -379,27 +379,27 @@ public class UserControllerTest
 
 	private static void assertEvent(Object payload, String expectedEvent)
 	{
-		if (!(payload instanceof Map<?, ?> map))
+		if (!(payload instanceof Map<?, ?>))
 		{
 			throw new AssertionError("Payload not a Map");
 		}
-		Object event = map.get("event");
+		Object event = ((Map<?, ?>) (payload)).get("event");
 		if (event == null)
 		{
 			throw new AssertionError("Missing 'event' key");
 		}
-		if (event instanceof Enum<?> e)
+		if (event instanceof Enum<?>)
 		{
-			if (!expectedEvent.equals(e.name()))
+			if (!expectedEvent.equals(((Enum<?>) event).name()))
 			{
-				throw new AssertionError("Expected " + expectedEvent + " but got " + e.name());
+				throw new AssertionError("Expected " + expectedEvent + " but got " + ((Enum<?>) event).name());
 			}
 		}
-		else if (event instanceof String s)
+		else if (event instanceof String)
 		{
-			if (!expectedEvent.equals(s))
+			if (!expectedEvent.equals(event))
 			{
-				throw new AssertionError("Expected " + expectedEvent + " but got " + s);
+				throw new AssertionError("Expected " + expectedEvent + " but got " + event);
 			}
 		}
 		else
@@ -411,25 +411,25 @@ public class UserControllerTest
 	@SuppressWarnings("unchecked")
 	private void assertEventPayload(Object payload, String expectedEvent)
 	{
-		if (payload instanceof Map<?, ?> map)
+		if (payload instanceof Map<?, ?>)
 		{
-			Object eventVal = map.get("event");
+			Object eventVal = ((Map<?, ?>) payload).get("event");
 			if (eventVal == null)
 			{
 				throw new AssertionError("Missing 'event' key in payload map");
 			}
-			if (eventVal instanceof Enum<?> e)
+			if (eventVal instanceof Enum<?>)
 			{
-				if (!expectedEvent.equals(e.name()))
+				if (!expectedEvent.equals(((Enum<?>) eventVal).name()))
 				{
-					throw new AssertionError("Expected enum event " + expectedEvent + " but got " + e.name());
+					throw new AssertionError("Expected enum event " + expectedEvent + " but got " + ((Enum<?>) eventVal).name());
 				}
 			}
-			else if (eventVal instanceof String s)
+			else if (eventVal instanceof String)
 			{
-				if (!expectedEvent.equals(s))
+				if (!expectedEvent.equals(eventVal))
 				{
-					throw new AssertionError("Expected string event " + expectedEvent + " but got " + s);
+					throw new AssertionError("Expected string event " + expectedEvent + " but got " + eventVal);
 				}
 			}
 			else

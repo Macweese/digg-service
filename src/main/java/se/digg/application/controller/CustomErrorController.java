@@ -74,22 +74,22 @@ public class CustomErrorController implements ErrorController
 	private HttpStatus resolveStatus(HttpServletRequest request, Map<String, Object> attrs)
 	{
 		Object sc = request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
-		if (sc instanceof Integer code)
+		if (sc instanceof Integer)
 		{
 			try
 			{
-				return HttpStatus.valueOf(code);
+				return HttpStatus.valueOf(((Integer) sc));
 			}
 			catch (Exception ignored)
 			{
 			}
 		}
 		Object fromMap = attrs.get("status");
-		if (fromMap instanceof Integer code)
+		if (fromMap instanceof Integer)
 		{
 			try
 			{
-				return HttpStatus.valueOf(code);
+				return HttpStatus.valueOf((Integer) fromMap);
 			}
 			catch (Exception ignored)
 			{

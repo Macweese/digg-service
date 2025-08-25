@@ -29,8 +29,6 @@ class UserRepositoryTest
 
 		userRepository.saveAndFlush(u1);
 
-		assertThatThrownBy(() -> {
-			userRepository.saveAndFlush(u2);
-		}).isInstanceOf(DataIntegrityViolationException.class);
+		assertThatThrownBy(() -> userRepository.saveAndFlush(u2)).isInstanceOf(DataIntegrityViolationException.class);
 	}
 }

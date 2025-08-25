@@ -168,8 +168,7 @@ public class UserController
 		@ApiResponse(responseCode = "404", description = "User not found"),
 		@ApiResponse(responseCode = "400", description = "Invalid user data")
 	})
-	public ResponseEntity<User> updateUserLegacy(@Parameter(description = "User ID") @PathVariable Long id,
-												 @Valid @RequestBody User user)
+	public ResponseEntity<User> updateUserLegacy(@Parameter(description = "User ID") @PathVariable Long id, @Valid @RequestBody User user)
 	{
 		return doUpdate(id, user);
 	}
@@ -181,8 +180,7 @@ public class UserController
 		@ApiResponse(responseCode = "404", description = "User not found"),
 		@ApiResponse(responseCode = "400", description = "Invalid user data")
 	})
-	public ResponseEntity<User> updateUser(@Parameter(description = "User ID") @PathVariable Long id,
-										   @Valid @RequestBody User user)
+	public ResponseEntity<User> updateUser(@Parameter(description = "User ID") @PathVariable Long id, @Valid @RequestBody User user)
 	{
 		return doUpdate(id, user);
 	}

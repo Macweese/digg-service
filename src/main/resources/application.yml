@@ -7,3 +7,13 @@ spring:
           allowed-methods: "*"
           allowed-headers: "*"
           allow-credentials: true
+
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+server:
+  shutdown: graceful
+
+logging:
+  level:
+    org.springframework.web.socket.handler.ExceptionWebSocketHandlerDecorator: error

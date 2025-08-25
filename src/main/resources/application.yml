@@ -3,7 +3,7 @@ spring:
     cors:
       mappings:
         "[/**]":
-          allowed-origins: "http://localhost:8080,http://localhost:8081,http://localhost:5173"
+          allowed-origins: "http://localhost:8080,http://localhost:8081,http://localhost:5173,http://localhost:5174,http://localhost:4173"
           allowed-methods: "*"
           allowed-headers: "*"
           allow-credentials: true

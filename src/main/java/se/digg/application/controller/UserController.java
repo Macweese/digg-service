@@ -44,7 +44,7 @@ import se.digg.application.service.UserServiceImpl;
 @Slf4j
 @RestController
 @RequestMapping("/digg/user")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {"http://localhost:4173", "http://localhost:5173", "http://localhost:5174", "http://localhost:8080", "http://localhost:8081"})
 @Tag(name = "User", description = "User management API")
 public class UserController
 {

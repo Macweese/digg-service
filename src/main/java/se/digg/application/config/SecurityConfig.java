@@ -110,7 +110,7 @@ public class SecurityConfig
 	public CorsConfigurationSource corsConfigurationSource()
 	{
 		CorsConfiguration cfg = new CorsConfiguration();
-		cfg.setAllowedOrigins(List.of("http://localhost:8081", "http://localhost:5173"));
+		cfg.setAllowedOrigins(List.of("http://localhost:8081", "http://localhost:5173", "http://localhost:5174", "http://localhost:4173"));
 		cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 		cfg.setAllowedHeaders(List.of("*"));
 		cfg.setExposedHeaders(List.of("Location"));

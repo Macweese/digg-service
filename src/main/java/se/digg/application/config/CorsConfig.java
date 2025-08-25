@@ -24,7 +24,7 @@ public class CorsConfig
 			public void addCorsMappings(CorsRegistry registry)
 			{
 				registry.addMapping("/**")
-					.allowedOriginPatterns("https?://localhost:[5173,8080,8081]")
+					.allowedOriginPatterns("https?://localhost:[4173,5173,5174,8080,8081]")
 					.allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
 					.allowedHeaders("*")
 					.allowCredentials(true);

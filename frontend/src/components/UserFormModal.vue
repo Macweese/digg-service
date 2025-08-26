@@ -1,6 +1,6 @@
-<script setup lang="ts">
-import { reactive, watch, onBeforeUnmount, ref } from 'vue';
-import type { User } from '../types';
+<script lang="ts" setup>
+import {onBeforeUnmount, reactive, ref, watch} from 'vue';
+import type {User} from '../types';
 
 const props = defineProps<{
   visible: boolean
@@ -74,7 +74,7 @@ watch(() => props.user, (u) => {
   } else {
     reset();
   }
-}, { immediate: true });
+}, {immediate: true});
 
 // Validation rules
 function validateField(field: Field): string | null {
@@ -152,7 +152,7 @@ function onSubmit(): void {
     focusFirstError();
     return;
   }
-  emit('save', { ...form });
+  emit('save', {...form});
 }
 
 // Keyboard handlers: ESC closes, ENTER submits (with guards)
@@ -166,10 +166,10 @@ function onKeydown(e: KeyboardEvent) {
   }
 
   if (
-    e.key === 'Enter' &&
-    !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey &&
-    !(e as any).isComposing &&
-    !(e.target instanceof HTMLTextAreaElement)
+      e.key === 'Enter' &&
+      !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey &&
+      !(e as any).isComposing &&
+      !(e.target instanceof HTMLTextAreaElement)
   ) {
     e.preventDefault();
     onSubmit();
@@ -180,7 +180,7 @@ function onKeydown(e: KeyboardEvent) {
 watch(() => props.visible, (vis) => {
   if (vis) document.addEventListener('keydown', onKeydown);
   else document.removeEventListener('keydown', onKeydown);
-}, { immediate: true });
+}, {immediate: true});
 
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKeydown);
@@ -191,123 +191,130 @@ onBeforeUnmount(() => {
   <!-- Backdrop -->
   <Transition name="overlay">
     <div
-      v-if="visible"
-      class="fixed inset-0 z-50 grid place-items-center p-4 bg-black/40 backdrop-blur-[1px]"
-      @click="emit('close')"
-      aria-hidden="true"
+        v-if="visible"
+        aria-hidden="true"
+        class="fixed inset-0 z-50 grid place-items-center p-4 bg-black/40 backdrop-blur-[1px]"
+        @click="emit('close')"
     >
       <!-- Modal panel -->
       <Transition name="modal">
         <div
-          v-if="visible"
-          class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md transform"
-          role="dialog"
-          aria-modal="true"
-          @click.stop
+            v-if="visible"
+            aria-modal="true"
+            class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md transform"
+            role="dialog"
+            @click.stop
         >
-          <form @submit.prevent="onSubmit" novalidate>
+          <form novalidate @submit.prevent="onSubmit">
             <div class="p-6">
-              <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
+              <h2 :style="{ userSelect: 'none', WebkitUserSelect: 'none' }"
+                  class="text-2xl font-bold text-slate-800 dark:text-white mb-6">
                 {{ form.id ? 'Edit User' : 'Add New User' }}
               </h2>
 
               <div class="space-y-4">
                 <!-- Name -->
                 <div>
-                  <label for="name" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">Name</label>
+                  <label :style="{ userSelect: 'none', WebkitUserSelect: 'none' }" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1"
+                         for="name">Name</label>
                   <input
-                    ref="name"
-                    :ref="inputRefs.name"
-                    type="text"
-                    id="name"
-                    v-model="form.name"
-                    required
-                    @blur="onBlur('name')"
-                    @input="onInput('name')"
-                    :aria-invalid="showError('name')"
-                    aria-describedby="name-hint name-error"
-                    class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 dark:text-white transition delay-50 duration-150 ease-in-out"
-                    :class="{ 'border-red-500 focus:ring-red-500/80': showError('name') }"
+                      id="name"
+                      :ref="inputRefs.name"
+                      ref="name"
+                      v-model="form.name"
+                      :aria-invalid="showError('name')"
+                      :class="{ 'border-red-500 focus:ring-red-500/80': showError('name') }"
+                      aria-describedby="name-hint name-error"
+                      class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 dark:text-white transition delay-50 duration-150 ease-in-out"
+                      required
+                      type="text"
+                      @blur="onBlur('name')"
+                      @input="onInput('name')"
                   />
-                  <p id="name-hint" class="mt-1 text-xs text-slate-500 dark:text-slate-400" v-if="!showError('name')">
+                  <p v-if="!showError('name')" id="name-hint" class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                     Enter the user’s full name (min 2 characters).
                   </p>
-                  <p id="name-error" class="mt-1 text-xs text-red-600" role="alert" v-else>
+                  <p v-else id="name-error" class="mt-1 text-xs text-red-600" role="alert">
                     {{ errors.name }}
                   </p>
                 </div>
 
                 <!-- Email -->
                 <div>
-                  <label for="email" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">Email</label>
+                  <label :style="{ userSelect: 'none', WebkitUserSelect: 'none' }" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1"
+                         for="email">Email</label>
                   <input
-                    ref="email"
-                    :ref="inputRefs.email"
-                    type="email"
-                    id="email"
-                    v-model="form.email"
-                    required
-                    @blur="onBlur('email')"
-                    @input="onInput('email')"
-                    :aria-invalid="showError('email')"
-                    aria-describedby="email-hint email-error"
-                    class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 dark:text-white transition delay-50 duration-150 ease-in-out"
-                    :class="{ 'border-red-500 focus:ring-red-500/80': showError('email') }"
+                      id="email"
+                      :ref="inputRefs.email"
+                      ref="email"
+                      v-model="form.email"
+                      :aria-invalid="showError('email')"
+                      :class="{ 'border-red-500 focus:ring-red-500/80': showError('email') }"
+                      aria-describedby="email-hint email-error"
+                      class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 dark:text-white transition delay-50 duration-150 ease-in-out"
+                      required
+                      type="email"
+                      @blur="onBlur('email')"
+                      @input="onInput('email')"
                   />
-                  <p id="email-hint" class="mt-1 text-xs text-slate-500 dark:text-slate-400" v-if="!showError('email')">
+                  <p v-if="!showError('email')" id="email-hint" class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                     We’ll use this to contact the user.
                   </p>
-                  <p id="email-error" class="mt-1 text-xs text-red-600" role="alert" v-else>
+                  <p v-else id="email-error" class="mt-1 text-xs text-red-600" role="alert">
                     {{ errors.email }}
                   </p>
                 </div>
 
                 <!-- Telephone -->
                 <div>
-                  <label for="phone" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">Telephone</label>
+                  <label :style="{ userSelect: 'none', WebkitUserSelect: 'none' }" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1"
+                         for="phone">Telephone</label>
                   <input
-                    ref="telephone"
-                    :ref="inputRefs.telephone"
-                    type="tel"
-                    id="phone"
-                    v-model="form.telephone"
-                    required
-                    @blur="onBlur('telephone')"
-                    @input="onInput('telephone')"
-                    :aria-invalid="showError('telephone')"
-                    aria-describedby="telephone-hint telephone-error"
-                    class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 dark:text-white transition delay-50 duration-150 ease-in-out"
-                    :class="{ 'border-red-500 focus:ring-red-500/80': showError('telephone') }"
+                      id="phone"
+                      :ref="inputRefs.telephone"
+                      ref="telephone"
+                      v-model="form.telephone"
+                      :aria-invalid="showError('telephone')"
+                      :class="{ 'border-red-500 focus:ring-red-500/80': showError('telephone') }"
+                      aria-describedby="telephone-hint telephone-error"
+                      class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 dark:text-white transition delay-50 duration-150 ease-in-out"
+                      required
+                      type="tel"
+                      @blur="onBlur('telephone')"
+                      @input="onInput('telephone')"
                   />
-                  <p id="telephone-hint" class="mt-1 text-xs text-slate-500 dark:text-slate-400" v-if="!showError('telephone')">
+                  <p v-if="!showError('telephone')" id="telephone-hint"
+                     class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                     Digits, spaces, parentheses, dashes and “+” are allowed.
                   </p>
-                  <p id="telephone-error" class="mt-1 text-xs text-red-600" role="alert" v-else>
+                  <p v-else id="telephone-error" class="mt-1 text-xs text-red-600" role="alert">
                     {{ errors.telephone }}
                   </p>
                 </div>
 
                 <!-- Address -->
                 <div>
-                  <label for="address" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">Address</label>
+                  <label :style="{ userSelect: 'none', WebkitUserSelect: 'none' }" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1"
+                         for="address">Address</label>
                   <input
-                    ref="address"
-                    :ref="inputRefs.address"
-                    type="text"
-                    id="address"
-                    v-model="form.address"
-                    required
-                    @blur="onBlur('address')"
-                    @input="onInput('address')"
-                    :aria-invalid="showError('address')"
-                    aria-describedby="address-hint address-error"
-                    class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 dark:text-white transition delay-50 duration-150 ease-in-out"
-                    :class="{ 'border-red-500 focus:ring-red-500/80': showError('address') }"
+                      id="address"
+                      :ref="inputRefs.address"
+                      ref="address"
+                      v-model="form.address"
+                      :aria-invalid="showError('address')"
+                      :class="{ 'border-red-500 focus:ring-red-500/80': showError('address') }"
+                      aria-describedby="address-hint address-error"
+                      class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 dark:text-white transition delay-50 duration-150 ease-in-out"
+                      required
+                      type="text"
+                      @blur="onBlur('address')"
+                      @input="onInput('address')"
                   />
-                  <p id="address-hint" class="mt-1 text-xs text-slate-500 dark:text-slate-400" v-if="!showError('address')">
+                  <p v-if="!showError('address')" id="address-hint"
+                     class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                     Street, number and any additional info.
                   </p>
-                  <p id="address-error" class="mt-1 text-xs text-red-600" role="alert" v-else>
+                  <p v-else id="address-error" class="mt-1 text-xs text-red-600" role="alert">
                     {{ errors.address }}
                   </p>
                 </div>
@@ -315,10 +322,14 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="bg-slate-50 dark:bg-slate-700 px-6 py-4 flex justify-end gap-3 rounded-b-lg">
-              <button type="button" @click="emit('close')" class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-600 border border-slate-300 dark:border-slate-500 rounded-md hover:bg-slate-50 dark:hover:bg-slate-500 focus:outline-none focus:ring-2  focus:ring-opacity-30 focus:ring-blue-500/80 transition delay-50 duration-150 ease-in-out" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
+              <button :style="{ userSelect: 'none', WebkitUserSelect: 'none' }" class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-600 border border-slate-300 dark:border-slate-500 rounded-md hover:bg-slate-50 dark:hover:bg-slate-500 focus:outline-none focus:ring-2  focus:ring-opacity-30 focus:ring-blue-500/80 transition delay-50 duration-150 ease-in-out"
+                      type="button"
+                      @click="emit('close')">
                 Cancel
               </button>
-              <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-teal-500/40 from-10% via-sky-500/30 via-30% to-emerald-500/30 to-90% bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2  focus:ring-opacity-30 focus:ring-blue-500/80 transition delay-50 duration-150 ease-in-out" :style="{ userSelect: 'none', WebkitUserSelect: 'none' }">
+              <button :style="{ userSelect: 'none', WebkitUserSelect: 'none' }"
+                      class="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-teal-500/40 from-10% via-sky-500/30 via-30% to-emerald-500/30 to-90% bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2  focus:ring-opacity-30 focus:ring-blue-500/80 transition delay-50 duration-150 ease-in-out"
+                      type="submit">
                 Save User
               </button>
             </div>
@@ -335,6 +346,7 @@ onBeforeUnmount(() => {
 .overlay-leave-active {
   transition: opacity 200ms ease;
 }
+
 .overlay-enter-from,
 .overlay-leave-to {
   opacity: 0;
@@ -345,10 +357,12 @@ onBeforeUnmount(() => {
 .modal-leave-active {
   transition: opacity 220ms ease, transform 220ms ease;
 }
+
 .modal-enter-from {
   opacity: 0;
   transform: translateY(8px) scale(0.98);
 }
+
 .modal-leave-to {
   opacity: 0;
   transform: translateY(8px) scale(0.98);

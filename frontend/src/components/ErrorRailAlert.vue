@@ -1,5 +1,5 @@
-<script setup lang="ts">
-import { ref, watch, nextTick } from 'vue';
+<script lang="ts" setup>
+import {nextTick, ref, watch} from 'vue';
 
 const props = defineProps<{
   message: string
@@ -33,6 +33,7 @@ function beforeEnter(el: HTMLElement) {
   el.style.height = '0px';
   el.classList.remove('leaving');
 }
+
 function enter(el: HTMLElement, done: () => void) {
   requestAnimationFrame(() => {
     el.style.transition = `height ${RAIL_MS}ms ease`;
@@ -55,16 +56,19 @@ function enter(el: HTMLElement, done: () => void) {
     el.addEventListener('transitionend', onEnd);
   }, RAIL_MS);
 }
+
 function afterEnter(el: HTMLElement) {
   el.style.height = '';
   el.style.overflow = '';
   el.style.transition = '';
 }
+
 function beforeLeave(el: HTMLElement) {
   el.classList.add('leaving');
   el.style.overflow = 'hidden';
   el.style.height = el.scrollHeight + 'px';
 }
+
 function leave(el: HTMLElement, done: () => void) {
   requestAnimationFrame(() => {
     el.style.transition = `height ${ALERT_MS}ms ease`;
@@ -79,10 +83,12 @@ function leave(el: HTMLElement, done: () => void) {
     el.addEventListener('transitionend', onEnd);
   });
 }
+
 function afterLeave() {
   showAlert.value = false;
   emit('cleared');
 }
+
 function dismiss() {
   showGroup.value = false;
 }
@@ -91,41 +97,45 @@ function dismiss() {
 <template>
   <div class="m-1 mb-5">
     <Transition
-      @before-enter="beforeEnter"
-      @enter="enter"
-      @after-enter="afterEnter"
-      @before-leave="beforeLeave"
-      @leave="leave"
-      @after-leave="afterLeave"
+        @enter="enter"
+        @leave="leave"
+        @before-enter="beforeEnter"
+        @after-enter="afterEnter"
+        @before-leave="beforeLeave"
+        @after-leave="afterLeave"
     >
       <div v-if="showGroup" class="error-group-wrapper">
         <div class="relative">
           <div class="error-rail"></div>
-          <span class="rail-dot" aria-hidden="true"></span>
+          <span aria-hidden="true" class="rail-dot"></span>
         </div>
 
         <div
-          class="border-s-4 border-red-400/50 bg-red-800/30 p-4 rounded-sm alert-panel"
-          :class="{ shown: showAlert }"
-          role="alert"
+            :class="{ shown: showAlert }"
+            class="border-s-4 border-red-400/50 bg-red-800/30 p-4 rounded-sm alert-panel"
+            role="alert"
         >
           <div class="flex justify-between items-start">
             <div class="flex items-center gap-2 text-red-400">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              <svg class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24"
+                   xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-linecap="round" stroke-linejoin="round"
+                      stroke-width="2"/>
               </svg>
               <strong class="font-normal">Something went wrong</strong>
             </div>
             <button
-              type="button"
-              class="flex justify-self-end text-red-400 cursor-pointer hover:text-red-300 transition-colors"
-              @click="dismiss"
-              aria-label="Dismiss error"
-              title="Close"
+                aria-label="Dismiss error"
+                class="flex justify-self-end text-red-400 cursor-pointer hover:text-red-300 transition-colors"
+                title="Close"
+                type="button"
+                @click="dismiss"
             >
-              <svg class="fill-current h-6 w-6 text-red-400" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+              <svg class="fill-current h-6 w-6 text-red-400" role="button" viewBox="0 0 20 20"
+                   xmlns="http://www.w3.org/2000/svg">
                 <title>Close</title>
-                <path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/>
+                <path
+                    d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/>
               </svg>
             </button>
           </div>
@@ -139,7 +149,9 @@ function dismiss() {
 </template>
 
 <style>
-.error-group-wrapper { will-change: height; }
+.error-group-wrapper {
+  will-change: height;
+}
 
 /* Rail */
 .error-rail {
@@ -147,11 +159,12 @@ function dismiss() {
   height: 3px;
   width: 100%;
   border-radius: 9999px;
-  background: linear-gradient(90deg, rgba(0,0,0,0) 0%, #fca5a5 15%, #ef4444 50%, #fca5a5 85%, rgba(0,0,0,0) 100%);
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0) 0%, #fca5a5 15%, #ef4444 50%, #fca5a5 85%, rgba(0, 0, 0, 0) 100%);
   transform-origin: center;
   transform: scaleX(0);
   animation: rail-grow 350ms ease-out forwards;
 }
+
 .rail-dot {
   position: absolute;
   top: -3px;
@@ -163,15 +176,32 @@ function dismiss() {
   transform: translateX(-50%);
   animation: rail-dot-fade 350ms ease-out forwards;
 }
+
 @keyframes rail-grow {
-  0%   { transform: scaleX(0); opacity: 0.6; }
-  60%  { transform: scaleX(0.9); opacity: 1; }
-  100% { transform: scaleX(1); opacity: 1; }
+  0% {
+    transform: scaleX(0);
+    opacity: 0.6;
+  }
+  60% {
+    transform: scaleX(0.9);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
 }
+
 @keyframes rail-dot-fade {
-  0%   { opacity: 1; }
-  60%  { opacity: 1; }
-  100% { opacity: 0; }
+  0% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 /* Alert fade/slide */
@@ -182,6 +212,7 @@ function dismiss() {
   transition: opacity 220ms ease, transform 220ms ease;
   will-change: opacity, transform;
 }
+
 .alert-panel.shown {
   opacity: 1;
   transform: translateY(0);

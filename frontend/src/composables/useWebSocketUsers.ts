@@ -6,7 +6,7 @@ import {UserEventType} from '../events';
 export function useWebSocketUsers(onUsersChanged: () => Promise<void> | void) {
     let stompClient: Client | null = null;
 
-    const ALLOWED_EVENTS = new Set<string>(Object.values(UserEventType as any));
+    const ALLOWED_EVENTS = new Set<string>(Object.values(UserEventType).map(String));
 
     function extractEvent(body: string): string | null {
         // Try JSON first
@@ -38,7 +38,7 @@ export function useWebSocketUsers(onUsersChanged: () => Promise<void> | void) {
 
     function connect(): void {
         stompClient = new Client({
-            webSocketFactory: () => new SockJS('http://localhost:8080/ws') as any,
+            webSocketFactory: () => new SockJS('http://localhost:8080/ws') as unknown as IStompSocket,
             reconnectDelay: 5000,
             onConnect: () => {
                 stompClient?.subscribe('/topic/users', async (message: IMessage) => {

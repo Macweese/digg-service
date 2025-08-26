@@ -15,7 +15,7 @@ const SAVE_ENDPOINT_CANDIDATES = [
 
 function getConfiguredSaveEndpoint(): string | null {
     // Allow hardcoding via env var (vite)
-    const fromEnv = (import.meta as any).env?.VITE_USER_SAVE_ENDPOINT as string | undefined;
+    const fromEnv = (import.meta as unknown as { env?: { VITE_USER_SAVE_ENDPOINT?: string } }).env?.VITE_USER_SAVE_ENDPOINT;
     if (fromEnv && typeof fromEnv === 'string' && fromEnv.trim()) return fromEnv.trim();
 
     // Then check cache

@@ -60,7 +60,7 @@ function onSearchEscape() {
 async function handleSaveUser(user: User) {
   try {
     await saveUser(user);
-  } catch (e: any) {
+  } catch (e: unknown) {
     errorMessage.value = e?.message ? 'Failed to save user. ' + e.message : 'Failed to save user.';
     return;
   }
@@ -75,7 +75,7 @@ async function confirmDelete() {
     await apiDeleteUser(userToDelete.value);
     toastMessage.value = 'User deleted';
     await loadUsers();
-  } catch (e: any) {
+  } catch (e: unknown) {
     errorMessage.value = e?.message ? 'Failed to delete user. ' + e.message : 'Failed to delete user.';
   } finally {
     closeDeleteConfirm();

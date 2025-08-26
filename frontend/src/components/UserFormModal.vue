@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import {onBeforeUnmount, reactive, ref, watch} from 'vue';
+import { onBeforeUnmount, reactive, ref, watch, type Ref } from 'vue';
 import type {User} from '../types';
 
 const props = defineProps<{
@@ -40,7 +40,7 @@ const touched = reactive<Record<Field, boolean>>({
 const submitAttempted = ref(false);
 
 // element refs to focus first invalid
-const inputRefs: Record<Field, any> = {
+const inputRefs: Record<Field, Ref<HTMLInputElement | null>> = {
   name: ref<HTMLInputElement | null>(null),
   email: ref<HTMLInputElement | null>(null),
   telephone: ref<HTMLInputElement | null>(null),
@@ -78,7 +78,7 @@ watch(() => props.user, (u) => {
 
 // Validation rules
 function validateField(field: Field): string | null {
-  const val = String((form as any)[field] ?? '').trim();
+  const val = String((form[field] ?? '')).trim();
 
   switch (field) {
     case 'name':
@@ -168,7 +168,7 @@ function onKeydown(e: KeyboardEvent) {
   if (
       e.key === 'Enter' &&
       !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey &&
-      !(e as any).isComposing &&
+      !((e as unknown as { isComposing?: boolean }).isComposing === true) &&
       !(e.target instanceof HTMLTextAreaElement)
   ) {
     e.preventDefault();
@@ -220,7 +220,6 @@ onBeforeUnmount(() => {
                   <input
                       id="name"
                       :ref="inputRefs.name"
-                      ref="name"
                       v-model="form.name"
                       :aria-invalid="showError('name')"
                       :class="{ 'border-red-500 focus:ring-red-500/80': showError('name') }"
@@ -246,7 +245,6 @@ onBeforeUnmount(() => {
                   <input
                       id="email"
                       :ref="inputRefs.email"
-                      ref="email"
                       v-model="form.email"
                       :aria-invalid="showError('email')"
                       :class="{ 'border-red-500 focus:ring-red-500/80': showError('email') }"
@@ -272,7 +270,6 @@ onBeforeUnmount(() => {
                   <input
                       id="phone"
                       :ref="inputRefs.telephone"
-                      ref="telephone"
                       v-model="form.telephone"
                       :aria-invalid="showError('telephone')"
                       :class="{ 'border-red-500 focus:ring-red-500/80': showError('telephone') }"
@@ -299,7 +296,6 @@ onBeforeUnmount(() => {
                   <input
                       id="address"
                       :ref="inputRefs.address"
-                      ref="address"
                       v-model="form.address"
                       :aria-invalid="showError('address')"
                       :class="{ 'border-red-500 focus:ring-red-500/80': showError('address') }"

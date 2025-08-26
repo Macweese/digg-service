@@ -39,8 +39,9 @@ export function useUsers() {
             const page = await fetchUsers(currentPage.value, itemsPerPage.value, searchTerm.value);
             usersPage.value = page;
             usersPage.value.content = usersPage.value.content || [];
-        } catch (e: any) {
-            errorMessage.value = 'Could not load users: ' + (e?.message || String(e));
+        } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : typeof e === 'string' ? e : '';
+            errorMessage.value = 'Could not load users' + (msg ? `: ${msg}` : '');
         } finally {
             isLoading.value = false;
             if (loadingTimeout) window.clearTimeout(loadingTimeout);

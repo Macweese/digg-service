@@ -9,9 +9,9 @@ A REST-based CRUD microservice, packaged for local dev and containerized deploym
 - Frontend Vue 3 (Node 20, served by Nginx)
 
 Dockerfiles:
-- Fullstack (backend + frontend): `./Dockerfile.fullstack`
 - Backend API: `./Dockerfile`
 - Frontend Web: `./frontend/Dockerfile`
+- Fullstack (backend + frontend): `./Dockerfile.fullstack`
 
 ## Quick start (Docker Compose)
 
@@ -20,8 +20,8 @@ docker compose up --build
 ```
 
 Open:
-- Frontend: http://localhost:8081
-- Backend API: http://localhost:8080
+- Frontend: http://localhost:8080
+- Backend API: http://localhost:8080/api-docs
 - Health: http://localhost:8080/actuator/health
 - Swagger: http://localhost:8080/swagger-ui/index.html
 
@@ -36,25 +36,39 @@ Test:
 curl http://localhost:8080/digg/user
 ```
 
+### Credentials in development mode
+Spring login:
+````
+USER: admin
+PASS: password
+````
+H2DB-Console:
+```
+USER: sa
+PASS: 
+```
+
 ## Build and run images
 
-Fullstack:
+### Fullstack:
 ```bash
 docker build -t edusihb309/digg-service-fullstack:local -f Dockerfile.fullstack .
 docker run --rm -p 8080:8080 -p 8081:80 edusihb309/digg-service-fullstack:local
 ```
-
-Backend:
+---
+*Or run exclusively:*
+### Backend:
 ```bash
 docker build -t edusihb309/digg-service-api:local .
 docker run --rm -p 8080:8080 edusihb309/digg-service-api:local
 ```
 
-Frontend:
+### Frontend:
 ```bash
 docker build -t edusihb309/digg-service-web:local -f frontend/Dockerfile .
 docker run --rm -p 8081:80 edusihb309/digg-service-web:local
 ```
+
 
 Tip: JVM tuning for backend
 ```bash
@@ -66,8 +80,9 @@ docker run --rm -e JAVA_OPTS="-Xms256m -Xmx512m" -p 8080:8080 edusihb309/digg-se
 - Backend (Spring Boot): root project with Maven
 - Frontend (Vue 3): `./frontend`
 - Containers:
-    - Backend image built from Dockerfile at repo root
-    - Frontend image built from frontend/Dockerfile
+    - Backend image built from `Dockerfile` at repo root
+    - Frontend image built from `frontend/Dockerfile`
+    - Fullstack image built from `Dockerfile.fullstack` at repo root
     - Nginx serves the built frontend and can proxy API calls to the backend
 
 ### Architecture overview
@@ -82,7 +97,7 @@ docker run --rm -e JAVA_OPTS="-Xms256m -Xmx512m" -p 8080:8080 edusihb309/digg-se
 
 ### Endpoints (examples)
 
-- Data: `GET /digg/user` (list, paginated), `POST /digg/user` (create), `PUT /digg/user/{id}`, `DELETE /digg/user/{id}`
+- Data: `GET /digg/user` (list), `GET /digg/user/{page}/{size}` (list, paginated) `POST /digg/user` (create), `PUT /digg/user/{id}`, `DELETE /digg/user/{id}`
 - Health: `GET /actuator/health`
 - OpenAPI: `GET /v3/api-docs`
 - Swagger UI: `/swagger-ui/index.html`

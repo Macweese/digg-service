@@ -1,18 +1,15 @@
-name: CI
+name: CI - Validate
 
 on:
   push:
-    branches: [ "master" ]
   pull_request:
-    branches: [ "master" ]
   workflow_dispatch:
 
-# Minimal perms; allow pushing container img
+# Minimal permissions; no package pushes needed
 permissions:
   contents: read
-  packages: write
 
-# Cancel in-progress runs for same ref if new one starts
+# Cancel in-progress runs for same ref if a new one starts
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -80,6 +77,8 @@ jobs:
             npm install
           fi
 
+      - name: Check code style
+        run: npm run lint
       - name: Run unit tests with coverage
         run: npm run test:ci
 
@@ -101,77 +100,3 @@ jobs:
           name: frontend-dist
           path: frontend/dist
           if-no-files-found: error
-
-  docker:
-    name: Docker • Build (and Push on main)
-    runs-on: ubuntu-latest
-    needs: [ backend, frontend ]
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # Login only for push events (PRs build but don't push)
-      - name: Log in to GHCR
-        if: github.event_name == 'push'
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      # Prepare lowercase image names
-      - name: Prepare image names (lowercase)
-        id: prep
-        run: |
-          REPO_LC=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          echo "BACKEND_IMAGE=ghcr.io/${REPO_LC}-backend" >> "$GITHUB_ENV"
-          echo "FRONTEND_IMAGE=ghcr.io/${REPO_LC}-frontend" >> "$GITHUB_ENV"
-          echo "FULLSTACK_IMAGE=ghcr.io/${REPO_LC}-fullstack" >> "$GITHUB_ENV"
-          echo "SHA_TAG=sha-${{ github.sha }}" >> "$GITHUB_ENV"
-
-      # Backend img
-      - name: Build (and Push) Backend Image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-          platforms: linux/amd64
-          tags: |
-            ${{ env.BACKEND_IMAGE }}:${{ env.SHA_TAG }}
-            ${{ env.BACKEND_IMAGE }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      # Frontend img
-      - name: Build (and Push) Frontend Image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./frontend/Dockerfile
-          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-          platforms: linux/amd64
-          tags: |
-            ${{ env.FRONTEND_IMAGE }}:${{ env.SHA_TAG }}
-            ${{ env.FRONTEND_IMAGE }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build (and Push) Fullstack Image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile.fullstack
-          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-          platforms: linux/amd64
-          tags: |
-            ${{ env.FULLSTACK_IMAGE }}:${{ env.SHA_TAG }}
-            ${{ env.FULLSTACK_IMAGE }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          build-args: |
-            VITE_API_URL=/api

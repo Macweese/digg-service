@@ -77,8 +77,12 @@ jobs:
             npm install
           fi
 
+      - name: Show ESLint version
+        run: npx eslint -v
+
       - name: Check code style
-        run: npm run lint
+        run: npm run lint -- --max-warnings=0
+
       - name: Run unit tests with coverage
         run: npm run test:ci
 

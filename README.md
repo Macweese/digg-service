@@ -1,5 +1,8 @@
 # DIGG Service
 
+[![](https://img.shields.io/github/actions/workflow/status/macweese/digg-service/deployment.yml?branch=master&logo=github&logoColor=A9A9A9&label=CI%20/%20CD&labelColor=%23303030&color=009800
+)](https://github.com/Macweese/digg-service/actions/workflows/deployment.yml)  
+
 A REST-based CRUD microservice, packaged for local dev and containerized deployment.  
 
 - Backend uses Spring Boot (Java 17, Maven)

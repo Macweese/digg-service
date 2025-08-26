@@ -10,6 +10,7 @@ package se.digg.application;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Contact;
 import io.swagger.v3.oas.annotations.info.Info;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -35,6 +36,7 @@ public class Application
 {
 	private static ApplicationEventPublisher eventPublisher;
 
+	@Transactional
 	public static void main(String[] args)
 	{
 		ConfigurableApplicationContext ctx = SpringApplication.run(Application.class, args);

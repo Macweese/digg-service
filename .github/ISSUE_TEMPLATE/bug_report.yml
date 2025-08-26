@@ -1,0 +1,64 @@
+name: Bug report
+description: Report something broken
+body:
+  - type: markdown
+    attributes:
+      value: >
+        ## DIGG-service bug report  
+
+        Before proceeding to submit a bug report, please verify the bug is
+        replicable and not a duplicate of an already exist issue in the [#issue
+        tracker](https://github.com/Macweese/digg-service/issues). If your issue
+        is found to already exist, please provide any information to the relevant issue
+        through a comment or a reaction.
+  - type: dropdown
+    id: dropdown-1
+    attributes:
+      label: Issue
+      options:
+        - Crash or hang
+        - Incorrect behaviour
+        - Performance
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: dropdown-2
+    attributes:
+      label: Layer
+      description: Which part of the system does this concern? E.g. client related issue
+      options:
+        - Client
+        - Server
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: textarea-3
+    attributes:
+      label: Bug description
+      description: How did you find the bug? Any additional details you can provide?
+    validations:
+      required: true
+  - type: textarea
+    id: textarea-4
+    attributes:
+      label: Screenshots or recordings
+      description: Add any screenshots or recordings related to the issue.
+    validations:
+      required: false
+  - type: textarea
+    id: textarea-5
+    attributes:
+      label: OS version
+      description: Version information for your operating system, ex. Windows 11,
+        MacOS Big Sur, Ubuntu Linux, etc.
+    validations:
+      required: true
+  - type: textarea
+    id: textarea-6
+    attributes:
+      label: App version number
+      description: The version or digest of the app.
+    validations:
+      required: true

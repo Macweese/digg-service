@@ -4,6 +4,7 @@ WORKDIR /app
 
 # Cache dependencies
 COPY pom.xml .
+COPY checkstyle.xml .
 RUN mvn -q -DskipTests dependency:go-offline
 
 # Build

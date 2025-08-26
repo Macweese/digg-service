@@ -30,6 +30,15 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig
 {
 
+	/**
+	 * Configures the security filter chain for the application.
+	 * This method defines access rules, CSRF protection, CORS settings,
+	 * form login, and exception handling for the application's HTTP requests.
+	 *
+	 * @param http the HttpSecurity object to configure
+	 * @return a SecurityFilterChain instance
+	 * @throws Exception if an error occurs during configuration
+	 */
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception
 	{
@@ -58,6 +67,12 @@ public class SecurityConfig
 		return http.build();
 	}
 
+	/**
+	 * Configures the Cross-Origin Resource Sharing (CORS) settings for the application.
+	 * This bean defines which origins, methods, and headers are allowed for cross-origin requests.
+	 *
+	 * @return a CorsConfigurationSource instance
+	 */
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource()
 	{
@@ -73,6 +88,14 @@ public class SecurityConfig
 		return source;
 	}
 
+	/**
+	 * Configure in-memory user for demon purposes.
+	 * In a production environment, would typically use a database
+	 * or an external identity provider for user management.
+	 *
+	 * @param passwordEncoder the password encoder to use for encoding passwords
+	 * @return a UserDetailsService
+	 */
 	@Bean
 	public UserDetailsService userDetailsService(PasswordEncoder passwordEncoder)
 	{
@@ -86,6 +109,12 @@ public class SecurityConfig
 		return new InMemoryUserDetailsManager(user);
 	}
 
+	/**
+	 * Provides a password encoder for encoding user passwords.
+	 * BCrypt is recommended for strong password hashing.
+	 *
+	 * @return a PasswordEncoder
+	 */
 	@Bean
 	public PasswordEncoder passwordEncoder()
 	{

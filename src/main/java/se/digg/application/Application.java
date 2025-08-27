@@ -51,7 +51,7 @@ public class Application
 	private static void markApplicationReady()
 	{
 		AvailabilityChangeEvent.publish(eventPublisher, new Object(), ReadinessState.ACCEPTING_TRAFFIC);
-		System.out.println("Application is now ready to accept traffic");
+		log.info("Application is now ready to accept traffic");
 	}
 
 	private static void registerGracefulShutdownHook(ConfigurableApplicationContext context)
@@ -76,7 +76,7 @@ public class Application
 			}
 
 			context.close();
-			log.info("Graceful shutdown completed");
+			log.info("Spring Boot application has been stopped - shutdown process finished!");
 		}));
 	}
 }

@@ -7,13 +7,19 @@
  */
 package se.digg.application.config;
 
+import jakarta.servlet.http.HttpServletResponse;
+import java.util.Arrays;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -22,13 +28,18 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
+@EnableWebSecurity
 public class SecurityConfig
 {
+	@Autowired
+	private Environment env;
 
 	/**
 	 * Configures the security filter chain for the application.
@@ -44,13 +55,28 @@ public class SecurityConfig
 	{
 		http
 			.cors(Customizer.withDefaults())
-			.csrf(AbstractHttpConfigurer::disable)
-			.authorizeHttpRequests(auth -> auth
-				.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Allow pre-flight CORS requests
+			// Keep CSRF enabled, but ignore for H2 console
+			.csrf(csrf ->
+				{
+					csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse());
+					// Only disable CSRF for H2 console in non-production environments
+					if (Arrays.asList(env).contains("dev") || Arrays.asList(env.getActiveProfiles()).contains("test"))
+					{
+						csrf.ignoringRequestMatchers(PathRequest.toH2Console());
+					}
+				}
+			).authorizeHttpRequests(auth -> auth
+				// Allow pre-flight CORS requests
+				.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 				// Allow public access to certain endpoints (Swagger, Actuator, WebSockets, API, etc)
-				.requestMatchers("/ws/**", "digg**", "/actuator/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+				.requestMatchers("/ws/**", "/digg/**", "/actuator/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 				// Require authentication for H2 console
-				.requestMatchers("/h2-console/**").authenticated()
+				.requestMatchers("/h2-console/**").access((authentication, ctx) ->
+				{
+					boolean isDevOrTest = Arrays.asList(env.getActiveProfiles()).contains("dev")
+						|| Arrays.asList(env.getActiveProfiles()).contains("test");
+					return new AuthorizationDecision(isDevOrTest);
+				})
 				// All other requests are permitted without authentication
 				.anyRequest().permitAll()
 			)
@@ -59,11 +85,18 @@ public class SecurityConfig
 			// Configure basic authentication for a simple login prompt (optional, formLogin is usually preferred)
 			// .httpBasic(Customizer.withDefaults())
 			// Exception handling for access denied (403 Forbidden)
-			.exceptionHandling(exceptions -> exceptions
-				.accessDeniedPage("/403") // You can define a custom 403 error page
-			);
+			.exceptionHandling(ex -> ex
+				// send 403 instead of forwarding to a page (which produced 404)
+				.accessDeniedHandler((req, res, e) -> res.sendError(HttpServletResponse.SC_FORBIDDEN))
+			)
+			// Write CSRF cookie on every request
+			.addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class);
 
-		http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
+		// H2 console needs frames - only in dev/test
+		if (Arrays.asList(env.getActiveProfiles()).contains("dev") || Arrays.asList(env.getActiveProfiles()).contains("test"))
+		{
+			http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
+		}
 		return http.build();
 	}
 

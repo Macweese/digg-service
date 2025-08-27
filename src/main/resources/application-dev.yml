@@ -1,0 +1,14 @@
+spring:
+  profiles:
+    active: dev
+  h2:
+    console:
+      enabled: true
+  security:
+    user:
+      name: admin
+      password: password
+
+logging:
+  level:
+    se.digg: DEBUG
